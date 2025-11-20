@@ -8,6 +8,7 @@ const orders = require("./routes/orders");
 const artisan = require("./routes/artisan");
 const stats = require("./routes/stats");
 
+
 const app = express();
 app.use(cors());
 app.use(express.json());
