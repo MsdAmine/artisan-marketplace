@@ -14,3 +14,13 @@ export async function createOrder() {
 
   return res.json();
 }
+
+export async function getOrders() {
+  const res = await fetch("http://localhost:3000/api/orders");
+
+  if (!res.ok) {
+    throw new Error("Erreur lors du chargement des commandes");
+  }
+
+  return res.json();
+}

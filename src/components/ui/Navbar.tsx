@@ -13,6 +13,10 @@ export default function Navbar() {
             Panier
           </Link>
 
+          <Link to="/my-orders">
+          Mes commandes
+          </Link>
+
           <Link to="/dashboard" className="text-gray-700 hover:text-primary">
             Artisan Dashboard
           </Link>

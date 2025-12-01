@@ -40,12 +40,16 @@ router.post("/", async (req, res) => {
 // GET all orders
 router.get("/", async (req, res) => {
   try {
-    const db = connectMongo();
+    const db = await connectMongo();
     const orders = await db.collection("orders").find().toArray();
+
+    console.log("Fetched orders:", orders);
     res.json(orders);
   } catch (err) {
+    console.error("❌ Orders API error:", err);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 module.exports = router;

@@ -5,6 +5,8 @@ import Cart from "./pages/Cart";
 import ArtisanDashboard from "./pages/ArtisanDashboard";
 import Stats from "./pages/Stats";
 import { Toaster } from "./components/ui/toaster";
+import MyOrders from "./pages/MyOrders";
+
 
 export default function App() {
   return (
@@ -16,6 +18,7 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         <Routes>
+          <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/" element={<Catalog />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/dashboard" element={<ArtisanDashboard />} />
