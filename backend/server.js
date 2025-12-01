@@ -2,24 +2,31 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const { connectDB } = require("./db/mongo");
+const { connectMongo } = require("./db/mongo");
+
+const productsRoute = require("./routes/products");
+const artisansRoute = require("./routes/artisan");
+const cartRoute = require("./routes/cart");
+const ordersRoute = require("./routes/orders");
+const statsRoute = require("./routes/stats");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load routes AFTER database is connected
+app.use("/api/products", productsRoute);
+app.use("/api/artisans", artisansRoute);
+app.use("/api/cart", cartRoute);
+app.use("/api/orders", ordersRoute);
+app.use("/api/stats", statsRoute);
+
 async function startServer() {
-  await connectDB();                // <-- Wait for DB
+  await connectMongo();     // IMPORTANT
   console.log("DB is ready");
 
-  app.use("/api/products", require("./routes/products"));
-  app.use("/api/artisans", require("./routes/artisan"));
-  app.use("/api/cart", require("./routes/cart"));
-  app.use("/api/orders", require("./routes/orders"));
-  app.use("/api/stats", require("./routes/stats"));
-
-  app.listen(3000, () => console.log("Backend running on port 3000"));
+  app.listen(3000, () => {
+    console.log("Backend running on port 3000");
+  });
 }
 
 startServer();

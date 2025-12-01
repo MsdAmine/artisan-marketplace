@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { getDB } = require("../db/mongo");
+const { connectMongo } = require("../db/mongo");
 
 // GET /stats/sales-by-artisan
 router.get("/sales-by-artisan", async (req, res) => {
   try {
-    const db = getDB();
+    const db = await connectMongo();
 
     const result = await db.collection("orders").aggregate([
       { $unwind: "$items" },
@@ -28,7 +28,7 @@ router.get("/sales-by-artisan", async (req, res) => {
 // GET /stats/sales-by-day
 router.get("/sales-by-day", async (req, res) => {
   try {
-    const db = getDB();
+    const db = await connectMongo();
 
     const result = await db.collection("orders").aggregate([
       {

@@ -1,87 +1,104 @@
 import { useEffect, useState } from "react";
+import { getCart, updateQuantity, removeItem } from "@/api/cart";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Cart() {
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [placingOrder, setPlacingOrder] = useState(false);
 
-  // Load cart from backend
-  async function loadCart() {
-    const res = await fetch("http://localhost:3000/api/cart");
-    const data = await res.json();
+  async function refresh() {
+    const data = await getCart();
     setCart(data);
     setLoading(false);
   }
 
   useEffect(() => {
-    loadCart();
+    refresh();
   }, []);
 
-  async function placeOrder() {
-    try {
-      setPlacingOrder(true);
-      const res = await fetch("http://localhost:3000/api/orders", {
-        method: "POST"
-      });
+  if (loading) return <p className="text-center mt-10">Chargement...</p>;
 
-      const data = await res.json();
-      alert("Commande créée avec succès !");
-      loadCart(); // refresh cart
-    } catch (err) {
-      alert("Erreur lors de la commande");
-    }
-    setPlacingOrder(false);
-  }
-
-  if (loading) return <p className="p-10">Chargement...</p>;
-
-  if (!cart || cart.items.length === 0)
-    return (
-      <div className="p-10 text-center">
-        <h2 className="text-2xl mb-4">Votre panier est vide</h2>
-        <a href="/" className="text-primary underline">
-          Continuer vos achats
-        </a>
-      </div>
-    );
+  if (!cart.items.length)
+    return <p className="text-center text-gray-500 mt-10">Votre panier est vide.</p>;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10">
-      <div className="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow">
-        <h1 className="text-3xl font-bold mb-6">Votre Panier</h1>
+    <div className="max-w-3xl mx-auto py-10">
+      <h1 className="text-3xl font-bold mb-6 text-center">🛒 Panier</h1>
 
-        <div className="space-y-6">
-          {cart.items.map((item: any) => (
-            <div
-              key={item.productId}
-              className="flex items-center justify-between border-b pb-4"
-            >
-              <div>
-                <p className="font-semibold">{item.productName}</p>
-                <p className="text-sm text-gray-500">
-                  {item.quantity} x {item.unitPrice} MAD
-                </p>
+      <div className="space-y-4">
+        {cart.items.map((item: any) => (
+          <Card key={item.productId} className="shadow-sm border rounded-xl">
+            <CardContent className="p-5 flex items-center justify-between gap-4">
+              
+              {/* Item name + price */}
+              <div className="flex-1">
+                <h2 className="text-lg font-semibold">{item.productName}</h2>
+                <p className="text-gray-500">{item.unitPrice} MAD</p>
               </div>
 
-              <p className="font-bold">{item.subtotal} MAD</p>
-            </div>
-          ))}
-        </div>
+              {/* Quantity buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="w-8 h-8"
+                  onClick={async () => {
+                    if (item.quantity > 1) {
+                      await updateQuantity(item.productId, item.quantity - 1);
+                      refresh();
+                    }
+                  }}
+                >
+                  –
+                </Button>
 
-        <div className="mt-6 flex justify-between items-center">
-          <p className="text-xl font-bold">
-            Total: <span className="text-primary">{cart.totalAmount} MAD</span>
-          </p>
+                <span className="w-6 text-center font-medium">
+                  {item.quantity}
+                </span>
 
-          <Button
-            onClick={placeOrder}
-            disabled={placingOrder}
-            className="px-6 py-2"
-          >
-            {placingOrder ? "Commande..." : "Passer la commande"}
-          </Button>
-        </div>
+                <Button
+                  variant="outline"
+                  className="w-8 h-8"
+                  onClick={async () => {
+                    await updateQuantity(item.productId, item.quantity + 1);
+                    refresh();
+                  }}
+                >
+                  +
+                </Button>
+              </div>
+
+              {/* Subtotal */}
+              <div className="w-28 text-right font-bold">
+                {item.subtotal} MAD
+              </div>
+
+              {/* Delete */}
+              <Button
+                variant="destructive"
+                className="w-10 h-10"
+                onClick={async () => {
+                  await removeItem(item.productId);
+                  refresh();
+                }}
+              >
+                ✕
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Total row */}
+      <div className="text-right mt-8 text-2xl font-bold">
+        Total: {cart.totalAmount} MAD
+      </div>
+
+      {/* Checkout button */}
+      <div className="text-right mt-6">
+        <Button className="px-6 py-3 text-lg font-semibold">
+          Valider la commande
+        </Button>
       </div>
     </div>
   );

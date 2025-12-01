@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { getDB } = require("../db/mongo");
+const { connectMongo } = require("../db/mongo");
 const redis = require("../db/redis");
 
 // Create order from cart
 router.post("/", async (req, res) => {
   try {
-    const db = getDB();
+    const db = await connectMongo();
     const cartKey = "cart:demo-user";
 
     const cartData = await redis.get(cartKey);
@@ -36,7 +36,7 @@ router.post("/", async (req, res) => {
 // GET all orders
 router.get("/", async (req, res) => {
   try {
-    const db = getDB();
+    const db = connectMongo();
     const orders = await db.collection("orders").find().toArray();
     res.json(orders);
   } catch (err) {
