@@ -9,7 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 
-export default function AddProductModal({ open, onClose, onCreated }: any) {
+export default function AddProductModal({
+  open,
+  onClose,
+  onCreated
+}: {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -19,8 +27,7 @@ export default function AddProductModal({ open, onClose, onCreated }: any) {
     artisanId: "demo-artisan"
   });
 
-  const [file, setFile] = useState(null);
-
+  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   function updateField(field: string, value: any) {
@@ -28,24 +35,71 @@ export default function AddProductModal({ open, onClose, onCreated }: any) {
   }
 
   async function createProduct() {
-    setLoading(true);
-    const formData = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-    formData.append(key, value);
-    });
+    try {
+      setLoading(true);
+      let imageUrl = "";
 
-    if (file) formData.append("image", file);
+      // -----------------------------------------
+      // 1. Upload image to Cloudinary
+      // -----------------------------------------
+      if (file) {
+        const imgForm = new FormData();
+        imgForm.append("image", file);
 
-    const res = await fetch("http://localhost:3000/api/artisans", {
-      method: "POST",
-      body: formData
-    });
+        const uploadRes = await fetch("http://localhost:3000/api/upload", {
+          method: "POST",
+          body: imgForm
+        });
 
-    if (res.ok) {
+        if (!uploadRes.ok) {
+          alert("Erreur lors de l'upload de l'image.");
+          setLoading(false);
+          return;
+        }
+
+        const uploadData = await uploadRes.json();
+        imageUrl = uploadData.url;
+      }
+
+      // -----------------------------------------
+      // 2. Send product (JSON) to backend
+      // -----------------------------------------
+      const productBody = {
+        ...form,
+        image: imageUrl,
+        price: Number(form.price),
+        stock: Number(form.stock)
+      };
+
+      const res = await fetch("http://localhost:3000/api/artisans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(productBody)
+      });
+
+      if (!res.ok) {
+        alert("Erreur lors de la création du produit.");
+        setLoading(false);
+        return;
+      }
+
+      // Success
       onCreated();
       onClose();
-    } else {
-      alert("Erreur lors de la création du produit");
+
+      // Reset form
+      setForm({
+        name: "",
+        description: "",
+        price: "",
+        stock: "",
+        category: "",
+        artisanId: "demo-artisan"
+      });
+      setFile(null);
+    } catch (error) {
+      console.error(error);
+      alert("Erreur inattendue 🙁");
     }
 
     setLoading(false);
@@ -59,25 +113,51 @@ export default function AddProductModal({ open, onClose, onCreated }: any) {
         </DialogHeader>
 
         <div className="space-y-4">
-          <Input placeholder="Nom" value={form.name} onChange={e => updateField("name", e.target.value)} />
-          <Textarea placeholder="Description" value={form.description} onChange={e => updateField("description", e.target.value)} />
+          <Input
+            placeholder="Nom"
+            value={form.name}
+            onChange={(e) => updateField("name", e.target.value)}
+          />
+
+          <Textarea
+            placeholder="Description"
+            value={form.description}
+            onChange={(e) => updateField("description", e.target.value)}
+          />
+
           <input
             type="file"
             accept="image/*"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) => setFile(e.target.files?.[0] || null)}
             className="border rounded p-2 w-full"
           />
 
           {file && (
-              <img
-                src={URL.createObjectURL(file)}
-                className="h-32 object-cover rounded"
-              />
+            <img
+              src={URL.createObjectURL(file)}
+              className="h-32 object-cover rounded"
+            />
           )}
 
-          <Input placeholder="Prix" value={form.price} onChange={e => updateField("price", e.target.value)} />
-          <Input placeholder="Stock" value={form.stock} onChange={e => updateField("stock", e.target.value)} />
-          <Input placeholder="Catégorie" value={form.category} onChange={e => updateField("category", e.target.value)} />
+          <Input
+            placeholder="Prix"
+            type="number"
+            value={form.price}
+            onChange={(e) => updateField("price", e.target.value)}
+          />
+
+          <Input
+            placeholder="Stock"
+            type="number"
+            value={form.stock}
+            onChange={(e) => updateField("stock", e.target.value)}
+          />
+
+          <Input
+            placeholder="Catégorie"
+            value={form.category}
+            onChange={(e) => updateField("category", e.target.value)}
+          />
 
           <Button className="w-full" onClick={createProduct} disabled={loading}>
             {loading ? "Création..." : "Créer le produit"}
