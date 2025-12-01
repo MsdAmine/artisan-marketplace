@@ -4,6 +4,7 @@ import AddProductModal from "@/components/ui/AddProductModal";
 import EditProductModal from "@/components/ui/EditProductModal";
 import DeleteConfirmModal from "@/components/ui/DeleteConfirmModal";
 
+
 export default function ArtisanDashboard() {
   const [products, setProducts] = useState([]);
   const [stats, setStats] = useState([]);

@@ -19,6 +19,8 @@ export default function AddProductModal({ open, onClose, onCreated }: any) {
     artisanId: "demo-artisan"
   });
 
+  const [file, setFile] = useState(null);
+
   const [loading, setLoading] = useState(false);
 
   function updateField(field: string, value: any) {
@@ -27,14 +29,16 @@ export default function AddProductModal({ open, onClose, onCreated }: any) {
 
   async function createProduct() {
     setLoading(true);
+    const formData = new FormData();
+    Object.entries(form).forEach(([key, value]) => {
+    formData.append(key, value);
+    });
+
+    if (file) formData.append("image", file);
+
     const res = await fetch("http://localhost:3000/api/artisans", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        price: Number(form.price),
-        stock: Number(form.stock)
-      })
+      body: formData
     });
 
     if (res.ok) {
@@ -57,6 +61,20 @@ export default function AddProductModal({ open, onClose, onCreated }: any) {
         <div className="space-y-4">
           <Input placeholder="Nom" value={form.name} onChange={e => updateField("name", e.target.value)} />
           <Textarea placeholder="Description" value={form.description} onChange={e => updateField("description", e.target.value)} />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setFile(e.target.files[0])}
+            className="border rounded p-2 w-full"
+          />
+
+          {file && (
+              <img
+                src={URL.createObjectURL(file)}
+                className="h-32 object-cover rounded"
+              />
+          )}
+
           <Input placeholder="Prix" value={form.price} onChange={e => updateField("price", e.target.value)} />
           <Input placeholder="Stock" value={form.stock} onChange={e => updateField("stock", e.target.value)} />
           <Input placeholder="Catégorie" value={form.category} onChange={e => updateField("category", e.target.value)} />

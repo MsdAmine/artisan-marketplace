@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
+const upload = require("../middleware/upload");
+
 
 // GET all artisan products
 router.get("/", async (req, res) => {
@@ -15,12 +17,15 @@ router.get("/", async (req, res) => {
 });
 
 // CREATE product
-router.post("/", async (req, res) => {
+router.post("/", upload.single("image"), async (req, res) => {
   try {
-    const db = await connectMongo();
+    const db = getDB();
 
     const product = {
       ...req.body,
+      price: Number(req.body.price),
+      stock: Number(req.body.stock),
+      image: req.file ? `/uploads/${req.file.filename}` : null,
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -29,23 +34,30 @@ router.post("/", async (req, res) => {
 
     res.json({ insertedId: result.insertedId });
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // UPDATE product
-router.put("/:id", async (req, res) => {
+router.put("/:id", upload.single("image"), async (req, res) => {
   try {
     const db = getDB();
 
+    const updateData = {
+      ...req.body,
+      price: Number(req.body.price),
+      stock: Number(req.body.stock),
+      updatedAt: new Date()
+    };
+
+    if (req.file) {
+      updateData.image = `/uploads/${req.file.filename}`;
+    }
+
     const updated = await db.collection("products").updateOne(
       { _id: new ObjectId(req.params.id) },
-      {
-        $set: {
-          ...req.body,
-          updatedAt: new Date()
-        }
-      }
+      { $set: updateData }
     );
 
     res.json({ updated: updated.modifiedCount });
@@ -53,6 +65,7 @@ router.put("/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // DELETE product
 router.delete("/:id", async (req, res) => {

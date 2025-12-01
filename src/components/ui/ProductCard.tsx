@@ -1,4 +1,10 @@
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import ProductModal from "./ProductModal";
@@ -12,6 +18,13 @@ export default function ProductCard({ p }: any) {
         className="shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 cursor-pointer"
         onClick={() => setOpen(true)}
       >
+        {p.image && (
+          <img
+            src={`http://localhost:3000${p.image}`}
+            className="w-full h-40 object-cover rounded-t-lg"
+          />
+        )}
+
         <CardHeader>
           <CardTitle className="text-lg font-semibold">{p.name}</CardTitle>
         </CardHeader>
@@ -36,11 +49,7 @@ export default function ProductCard({ p }: any) {
         </CardFooter>
       </Card>
 
-      <ProductModal
-        open={open}
-        onClose={() => setOpen(false)}
-        product={p}
-      />
+      <ProductModal open={open} onClose={() => setOpen(false)} product={p} />
     </>
   );
 }

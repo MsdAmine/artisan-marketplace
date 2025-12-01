@@ -3,7 +3,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
 
 import { Button } from "@/components/ui/button";
@@ -32,27 +32,25 @@ export default function ProductModal({ open, onClose, product }: any) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
+        {product.image && (
+          <img
+            src={`http://localhost:3000${product.image}`}
+            className="w-full h-64 object-cover rounded mb-4"
+          />
+        )}
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             {product.name}
           </DialogTitle>
-          <DialogDescription>
-            {product.description}
-          </DialogDescription>
+          <DialogDescription>{product.description}</DialogDescription>
         </DialogHeader>
 
         <div className="mt-4">
-          <p className="text-xl font-bold text-primary">
-            {product.price} MAD
-          </p>
+          <p className="text-xl font-bold text-primary">{product.price} MAD</p>
         </div>
 
         <div className="mt-6 flex justify-end">
-          <Button
-            onClick={handleAdd}
-            disabled={loading}
-            className="px-6"
-          >
+          <Button onClick={handleAdd} disabled={loading} className="px-6">
             {loading ? "Ajout..." : added ? "✔ Ajouté !" : "Ajouter au panier"}
           </Button>
         </div>
