@@ -5,6 +5,7 @@ import Cart from "./pages/Cart";
 import ArtisanDashboard from "./pages/ArtisanDashboard";
 import Stats from "./pages/Stats";
 
+
 export default function App() {
   return (
     <div className="min-h-screen bg-slate-50">
@@ -16,6 +17,7 @@ export default function App() {
           <Route path="/dashboard" element={<ArtisanDashboard />} />
           <Route path="/stats" element={<Stats />} />
           <Route path="*" element={<Navigate to="/" />} />
+          
         </Routes>
       </main>
     </div>
