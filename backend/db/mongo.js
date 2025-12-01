@@ -1,16 +1,16 @@
 const { MongoClient } = require("mongodb");
+require("dotenv").config();
 
 const client = new MongoClient(process.env.MONGO_URI);
 
-let db = null;
+let db;
 
-async function connectMongo() {
-  if (!db) {
-    await client.connect();
-    db = client.db(process.env.MONGO_DBNAME);
-    console.log("MongoDB connected");
-  }
+async function connectDB() {
+  await client.connect();
+  db = client.db("artisan_market");
+  console.log("MongoDB connected!");
   return db;
 }
 
-module.exports = { connectMongo };
+// Important: export BOTH the db variable AND the connect function
+module.exports = { connectDB, getDB: () => db };

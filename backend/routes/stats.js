@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const { connectMongo } = require("../db/mongo");
+const { getDB } = require("../db/mongo");
 
-// GET /api/stats/sales-by-artisan
+// GET /stats/sales-by-artisan
 router.get("/sales-by-artisan", async (req, res) => {
   try {
-    const db = await connectMongo();
+    const db = getDB();
 
     const result = await db.collection("orders").aggregate([
       { $unwind: "$items" },
@@ -21,15 +21,14 @@ router.get("/sales-by-artisan", async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("Stats error:", err);
     res.status(500).json({ error: "Failed to compute stats" });
   }
 });
 
-// Optional: sales per day
+// GET /stats/sales-by-day
 router.get("/sales-by-day", async (req, res) => {
   try {
-    const db = await connectMongo();
+    const db = getDB();
 
     const result = await db.collection("orders").aggregate([
       {
@@ -48,7 +47,6 @@ router.get("/sales-by-day", async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    console.error("Stats error:", err);
     res.status(500).json({ error: "Failed to compute daily stats" });
   }
 });

@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import Navbar from "./components/ui/Navbar";
 import Catalog from "./pages/Catalog";
 import Cart from "./pages/Cart";
 import ArtisanDashboard from "./pages/ArtisanDashboard";

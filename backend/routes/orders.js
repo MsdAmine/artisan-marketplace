@@ -1,18 +1,16 @@
 const express = require("express");
 const router = express.Router();
-const { connectMongo } = require("../db/mongo");
+const { getDB } = require("../db/mongo");
 const redis = require("../db/redis");
 
 // Create order from cart
 router.post("/", async (req, res) => {
   try {
-    const db = await connectMongo();
+    const db = getDB();
     const cartKey = "cart:demo-user";
 
     const cartData = await redis.get(cartKey);
-    if (!cartData) {
-      return res.status(400).json({ error: "Cart is empty" });
-    }
+    if (!cartData) return res.status(400).json({ error: "Cart is empty" });
 
     const cart = JSON.parse(cartData);
 
@@ -25,22 +23,25 @@ router.post("/", async (req, res) => {
       createdAt: new Date(),
     };
 
-    await db.collection("orders").insertOne(order);
+    const result = await db.collection("orders").insertOne(order);
 
     await redis.del(cartKey);
 
-    res.json({ message: "Order successfully placed", orderId: order._id });
+    res.json({ message: "Order placed", orderId: result.insertedId });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Failed to create order" });
   }
 });
 
-// Optional: List all orders (for testing)
+// GET all orders
 router.get("/", async (req, res) => {
-  const db = await connectMongo();
-  const orders = await db.collection("orders").find().toArray();
-  res.json(orders);
+  try {
+    const db = getDB();
+    const orders = await db.collection("orders").find().toArray();
+    res.json(orders);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

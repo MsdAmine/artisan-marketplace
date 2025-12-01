@@ -1,26 +1,31 @@
 const express = require("express");
 const router = express.Router();
-const { connectMongo } = require("../db/mongo");
+const { getDB } = require("../db/mongo");
+const { ObjectId } = require("mongodb");
 
 // GET all products
 router.get("/", async (req, res) => {
-  const db = await connectMongo();
-  const products = await db.collection("products").find({}).toArray();
-  res.json(products);
+  try {
+    const db = getDB();
+    const products = await db.collection("products").find().toArray();
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// POST create product
-router.post("/", async (req, res) => {
-  const db = await connectMongo();
-  const product = {
-    ...req.body,
-    currency: "MAD",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+// GET product by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const db = getDB();
+    const product = await db
+      .collection("products")
+      .findOne({ _id: new ObjectId(req.params.id) });
 
-  const result = await db.collection("products").insertOne(product);
-  res.json({ insertedId: result.insertedId });
+    res.json(product || { error: "Product not found" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;
