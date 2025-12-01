@@ -32,11 +32,16 @@ export default function ProductModal({ open, onClose, product }: any) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
-        {product.image && (
+        {product.image ? (
           <img
-            src={`http://localhost:3000${product.image}`}
-            className="w-full h-64 object-cover rounded mb-4"
+            src={product.image}
+            alt={product.name}
+            className="w-full max-h-80 object-contain rounded bg-black/5"
           />
+        ) : (
+          <div className="w-full h-48 bg-gray-200 rounded flex items-center justify-center text-gray-500">
+            No image
+          </div>
         )}
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
