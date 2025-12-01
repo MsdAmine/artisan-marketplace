@@ -15,35 +15,38 @@ export default function ProductCard({ p }: any) {
   return (
     <>
       <Card
-        className="shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 cursor-pointer"
+        className="rounded-xl border border-border shadow-sm 
+             hover:shadow-lg hover:-translate-y-1
+             transition-all duration-300 overflow-hidden cursor-pointer
+             bg-gradient-to-b from-white to-gray-50 group"
         onClick={() => setOpen(true)}
       >
-        {p.image ? (
+        {/* Image */}
+        <div className="relative">
           <img
             src={p.image}
             alt={p.name}
-            className="w-full h-48 object-cover rounded"
+            className="w-full h-52 object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
-        ) : (
-          <div className="w-full h-48 bg-gray-200 rounded flex items-center justify-center text-gray-500">
-            No image
-          </div>
-        )}
+        </div>
 
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold">{p.name}</CardTitle>
-        </CardHeader>
+        {/* Content */}
+        <div className="p-5">
+          <h3 className="text-[17px] font-semibold text-primary tracking-tight">
+            {p.name}
+          </h3>
 
-        <CardContent>
-          <p className="text-sm text-gray-600 mb-4 line-clamp-2">
+          <p className="text-secondary text-[14px] mt-1 line-clamp-2">
             {p.description}
           </p>
-          <p className="font-bold text-primary text-xl">{p.price} MAD</p>
-        </CardContent>
 
-        <CardFooter>
+          <div className="text-[20px] font-bold text-primary mt-4 tracking-tight">
+            {p.price} MAD
+          </div>
+
           <Button
-            className="w-full"
+            className="w-full mt-5 bg-primary text-white rounded-lg
+                 hover:bg-[#0f172a] active:scale-[0.98] transition-all duration-200"
             onClick={(e) => {
               e.stopPropagation();
               setOpen(true);
@@ -51,7 +54,7 @@ export default function ProductCard({ p }: any) {
           >
             Voir Détails
           </Button>
-        </CardFooter>
+        </div>
       </Card>
 
       <ProductModal open={open} onClose={() => setOpen(false)} product={p} />

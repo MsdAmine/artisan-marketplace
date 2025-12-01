@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 import { getOrders } from "@/api/orders";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 export default function MyOrders() {
@@ -29,67 +34,79 @@ export default function MyOrders() {
     );
 
   return (
-    <div className="max-w-3xl mx-auto py-10">
-      <h1 className="text-3xl font-bold mb-6 text-center">🧾 Mes Commandes</h1>
+    <div className="min-h-screen bg-[#F9FAFB] text-primary">
+      <div className="max-w-7xl mx-auto px-8 py-12">
+        <div className="max-w-3xl mx-auto py-10">
+          <h1 className="text-3xl font-bold mb-6 text-center">
+            🧾 Mes Commandes
+          </h1>
 
-      <div className="space-y-4">
-        {orders.map((order) => (
-          <Card
-            key={order._id}
-            className="cursor-pointer hover:shadow-md transition-all"
-            onClick={() => setSelectedOrder(order)}
+          <div className="space-y-4">
+            {orders.map((order) => (
+              <Card
+                key={order._id}
+                className="cursor-pointer hover:shadow-md transition-all"
+                onClick={() => setSelectedOrder(order)}
+              >
+                <CardContent className="p-5 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-xl font-semibold">
+                      Commande du{" "}
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </h2>
+                    <p className="text-gray-500">
+                      {order.items.length} articles
+                    </p>
+                  </div>
+
+                  <div className="text-lg font-bold">
+                    {order.totalAmount} MAD
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* ORDER DETAILS MODAL */}
+          <Dialog
+            open={!!selectedOrder}
+            onOpenChange={() => setSelectedOrder(null)}
           >
-            <CardContent className="p-5 flex justify-between items-center">
-              <div>
-                <h2 className="text-xl font-semibold">
-                  Commande du{" "}
-                  {new Date(order.createdAt).toLocaleDateString()}
-                </h2>
-                <p className="text-gray-500">
-                  {order.items.length} articles
-                </p>
-              </div>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Détails de la commande</DialogTitle>
+              </DialogHeader>
 
-              <div className="text-lg font-bold">
-                {order.totalAmount} MAD
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              {selectedOrder && (
+                <div className="space-y-3 mt-3">
+                  {selectedOrder.items.map((item: any, index: number) => (
+                    <div
+                      key={index}
+                      className="flex justify-between border-b pb-2"
+                    >
+                      <span>
+                        {item.productName} x {item.quantity}
+                      </span>
+                      <span className="font-bold">{item.subtotal} MAD</span>
+                    </div>
+                  ))}
 
-      {/* ORDER DETAILS MODAL */}
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Détails de la commande</DialogTitle>
-          </DialogHeader>
+                  <div className="text-right mt-4 text-xl font-bold">
+                    Total: {selectedOrder.totalAmount} MAD
+                  </div>
 
-          {selectedOrder && (
-            <div className="space-y-3 mt-3">
-              {selectedOrder.items.map((item: any, index: number) => (
-                <div
-                  key={index}
-                  className="flex justify-between border-b pb-2"
-                >
-                  <span>
-                    {item.productName} x {item.quantity}
-                  </span>
-                  <span className="font-bold">{item.subtotal} MAD</span>
+                  <Button
+                    className="mt-4 w-full"
+                    onClick={() => setSelectedOrder(null)}
+                  >
+                    Fermer
+                  </Button>
                 </div>
-              ))}
-
-              <div className="text-right mt-4 text-xl font-bold">
-                Total: {selectedOrder.totalAmount} MAD
-              </div>
-
-              <Button className="mt-4 w-full" onClick={() => setSelectedOrder(null)}>
-                Fermer
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+              )}
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
     </div>
   );
 }

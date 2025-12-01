@@ -36,18 +36,20 @@ export default function ProductModal({ open, onClose, product }: any) {
           <img
             src={product.image}
             alt={product.name}
-            className="w-full max-h-80 object-contain rounded bg-black/5"
+            className="w-full max-h-[60vh] object-contain rounded-xl bg-gray-50 shadow"
           />
         ) : (
           <div className="w-full h-48 bg-gray-200 rounded flex items-center justify-center text-gray-500">
             No image
           </div>
         )}
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold">
+        <DialogHeader className="mt-4">
+          <DialogTitle className="text-2xl font-semibold tracking-tight text-primary">
             {product.name}
           </DialogTitle>
-          <DialogDescription>{product.description}</DialogDescription>
+          <DialogDescription className="text-secondary text-[15px]">
+            {product.description}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4">

@@ -11,7 +11,6 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { createOrder } from "@/api/orders";
 
-// ANIMATION CLASSES
 const fade = "transition-all duration-300 ease-in-out";
 
 export default function Cart() {
@@ -31,140 +30,180 @@ export default function Cart() {
     refresh();
   }, []);
 
+  /* --------------------------- */
+  /*      Loading State          */
+  /* --------------------------- */
   if (loading)
-    return <p className="text-center mt-10 animate-pulse">Chargement...</p>;
+    return (
+      <p className="text-center mt-10 text-secondary animate-pulse">
+        Chargement...
+      </p>
+    );
 
+  /* --------------------------- */
+  /*      Empty Cart State       */
+  /* --------------------------- */
   if (!cart.items.length)
     return (
-      <div className="flex flex-col items-center mt-20 text-gray-500">
-        <img
-          src="https://lottie.host/c3e31dcb-c757-4bbd-a8de-60d7b69a5dca/Pbn6pxYyO6.json"
-          className="w-72"
-        />
-        <p className="mt-5 text-xl font-medium">Votre panier est vide</p>
+      <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-6">
+        <div className="w-24 h-24 rounded-xl bg-gray-100 flex items-center justify-center mb-6 shadow-inner">
+          <svg
+            className="w-12 h-12 text-gray-400"
+            fill="none"
+            strokeWidth="2"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 9h14l-2-9M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z" />
+          </svg>
+        </div>
+
+        <h2 className="text-xl font-semibold tracking-tight">
+          Votre panier est vide
+        </h2>
+        <p className="text-secondary mt-2">
+          Ajoutez un produit pour continuer.
+        </p>
       </div>
     );
 
+  /* --------------------------- */
+  /*           Cart UI           */
+  /* --------------------------- */
+
   return (
-    <div className="max-w-3xl mx-auto py-10 pb-28 relative">
-      <h1 className="text-3xl font-bold mb-6 text-center">🛒 Votre Panier</h1>
+    <div className="min-h-screen bg-background text-foreground">
+      <div className="max-w-3xl mx-auto px-6 pt-12 pb-32 relative">
+        {/* Title */}
+        <h1 className="text-3xl font-semibold tracking-tight text-center mb-8">
+          🛒 Votre Panier
+        </h1>
 
-      <div className="space-y-4">
-        {cart.items.map((item: any) => (
-          <Card
-            key={item.productId}
-            className={`shadow-sm border rounded-xl ${fade} hover:shadow-lg`}
-          >
-            <CardContent className="p-5 flex items-center justify-between gap-5">
-              {/* IMAGE */}
-              <img
-                src={item.image || "https://via.placeholder.com/80"}
-                className="w-20 h-20 rounded-lg object-cover shadow-sm"
-              />
+        {/* Cart Items */}
+        <div className="space-y-4">
+          {cart.items.map((item: any) => (
+            <Card
+              key={item.productId}
+              className={`rounded-xl border border-border shadow-sm hover:shadow-lg ${fade}`}
+            >
+              <CardContent className="p-5 flex items-center gap-5">
+                {/* IMAGE */}
+                <img
+                  src={item.image || "https://via.placeholder.com/80"}
+                  className="w-20 h-20 rounded-lg object-cover shadow-sm bg-gray-50"
+                />
 
-              {/* NAME + PRICE */}
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold">{item.productName}</h2>
-                <p className="text-gray-500">{item.unitPrice} MAD</p>
-              </div>
+                {/* PRODUCT INFO */}
+                <div className="flex-1">
+                  <h2 className="text-lg font-medium">{item.productName}</h2>
+                  <p className="text-secondary">{item.unitPrice} MAD</p>
+                </div>
 
-              {/* QUANTITY */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  className="w-8 h-8"
-                  onClick={async () => {
-                    if (item.quantity > 1) {
-                      await updateQuantity(item.productId, item.quantity - 1);
+                {/* QUANTITY */}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    className="w-8 h-8 rounded-lg"
+                    onClick={async () => {
+                      if (item.quantity > 1) {
+                        await updateQuantity(item.productId, item.quantity - 1);
+                        refresh();
+                      }
+                    }}
+                  >
+                    –
+                  </Button>
+
+                  <span className="w-6 text-center font-medium">
+                    {item.quantity}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    className="w-8 h-8 rounded-lg"
+                    onClick={async () => {
+                      await updateQuantity(item.productId, item.quantity + 1);
                       refresh();
-                    }
-                  }}
-                >
-                  –
-                </Button>
+                    }}
+                  >
+                    +
+                  </Button>
+                </div>
 
-                <span className="w-6 text-center font-medium">
-                  {item.quantity}
-                </span>
+                {/* SUBTOTAL */}
+                <div className="w-28 text-right font-semibold">
+                  {item.subtotal} MAD
+                </div>
 
+                {/* DELETE */}
                 <Button
-                  variant="outline"
-                  className="w-8 h-8"
+                  variant="destructive"
+                  className="w-10 h-10 rounded-lg"
                   onClick={async () => {
-                    await updateQuantity(item.productId, item.quantity + 1);
+                    await removeItem(item.productId);
+                    toast({
+                      title: "Item retiré",
+                      description: `${item.productName} a été supprimé du panier.`,
+                    });
                     refresh();
                   }}
                 >
-                  +
+                  ✕
                 </Button>
-              </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
-              {/* SUBTOTAL */}
-              <div className="w-28 text-right font-bold">
-                {item.subtotal} MAD
-              </div>
-
-              {/* DELETE */}
-              <Button
-                variant="destructive"
-                className="w-10 h-10"
-                onClick={async () => {
-                  await removeItem(item.productId);
-                  toast({
-                    title: "Item retiré",
-                    description: `${item.productName} a été supprimé du panier.`,
-                  });
-                  refresh();
-                }}
-              >
-                ✕
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* STICKY FOOTER */}
-      <div className="fixed bottom-0 left-0 w-full bg-white shadow-xl py-4 px-6 flex items-center justify-between border-t">
-        <span className="text-xl font-bold">Total: {cart.totalAmount} MAD</span>
-
-        <Button
-          className="px-6 py-3 text-lg font-semibold"
-          onClick={() => setCheckoutOpen(true)}
-        >
-          Valider la commande
-        </Button>
-      </div>
-
-      {/* CHECKOUT MODAL */}
-      <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Confirmer votre commande</DialogTitle>
-          </DialogHeader>
-
-          <p className="text-center mt-3 text-gray-600">
-            Montant total :{" "}
-            <span className="font-bold">{cart.totalAmount} MAD</span>
-          </p>
+        {/* Sticky Footer */}
+        <div className="fixed bottom-0 left-0 w-full bg-white border-t border-border shadow-lg px-6 py-4 flex items-center justify-between">
+          <span className="text-xl font-semibold">
+            Total: {cart.totalAmount} MAD
+          </span>
 
           <Button
-            className="w-full mt-6 py-3 text-lg"
-            onClick={async () => {
-              const result = await createOrder(); // <-- CALL BACKEND
-
-              toast({
-                title: "Commande validée !",
-                description: "Votre commande a été enregistrée.",
-              });
-
-              setCheckoutOpen(false);
-            }}
+            className="px-6 py-3 text-lg rounded-lg"
+            onClick={() => setCheckoutOpen(true)}
           >
-            Confirmer
+            Valider la commande
           </Button>
-        </DialogContent>
-      </Dialog>
+        </div>
+
+        {/* Checkout Modal */}
+        <Dialog open={checkoutOpen} onOpenChange={setCheckoutOpen}>
+          <DialogContent className="max-w-md rounded-xl">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">
+                Confirmer votre commande
+              </DialogTitle>
+            </DialogHeader>
+
+            <p className="text-center mt-3 text-secondary">
+              Montant total :
+              <span className="ml-1 font-bold text-primary">
+                {cart.totalAmount} MAD
+              </span>
+            </p>
+
+            <Button
+              className="w-full mt-6 py-3 text-lg rounded-lg"
+              onClick={async () => {
+                await createOrder();
+
+                toast({
+                  title: "Commande validée !",
+                  description: "Votre commande a été enregistrée.",
+                });
+
+                setCheckoutOpen(false);
+                refresh();
+              }}
+            >
+              Confirmer
+            </Button>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
