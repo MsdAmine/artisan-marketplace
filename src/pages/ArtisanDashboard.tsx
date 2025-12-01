@@ -9,7 +9,8 @@ export default function ArtisanDashboard() {
   const [stats, setStats] = useState([]);
   const [openAdd, setOpenAdd] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-const [deleteProduct, setDeleteProduct] = useState(null);
+  const [deleteProduct, setDeleteProduct] = useState(null);
+  const lowStockProducts = products.filter((p: any) => p.stock < 5);
 
 
   async function loadProducts() {
@@ -41,6 +42,11 @@ const [deleteProduct, setDeleteProduct] = useState(null);
             Ajouter un produit
           </Button>
         </div>
+        {lowStockProducts.length > 0 && (
+          <div className="mb-6 bg-red-100 border border-red-300 text-red-800 px-4 py-3 rounded">
+            ⚠️ Attention: {lowStockProducts.length} produit(s) ont un stock faible !
+          </div>
+        )}
 
         {/* Stats Section */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-12">
@@ -81,6 +87,7 @@ const [deleteProduct, setDeleteProduct] = useState(null);
   );
 }
 
+
 function StatCard({ title, value }: any) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border text-center">
@@ -107,29 +114,46 @@ function ProductTable({ products, onEdit, onDelete }: any) {
         </thead>
 
         <tbody>
-          {products.map((p: any) => (
-            <tr key={p._id} className="border-b">
-              <td className="py-2">{p.name}</td>
-              <td>{p.price} MAD</td>
-              <td>{p.stock}</td>
-              <td>{p.category}</td>
-              <td className="flex gap-3 py-2">
-                <Button size="sm" variant="default" onClick={() => onEdit(p)}>
-                  Modifier
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onDelete(p)}
-                >
-                  Supprimer
-                </Button>
-              </td>
-            </tr>
-          ))}
+          {products.map((p: any) => {
+            const lowStock = p.stock < 5;
+
+            return (
+              <tr
+                key={p._id}
+                className={`border-b ${
+                  lowStock ? "bg-red-50" : ""
+                }`}
+              >
+                <td className="py-2">{p.name}</td>
+                <td>{p.price} MAD</td>
+
+                <td className={lowStock ? "font-bold text-red-600" : ""}>
+                  {p.stock}
+
+                  {lowStock && (
+                    <span className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded-full">
+                      Stock faible
+                    </span>
+                  )}
+                </td>
+
+                <td>{p.category}</td>
+
+                <td className="flex gap-3 py-2">
+                  <Button size="sm" onClick={() => onEdit(p)}>
+                    Modifier
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => onDelete(p)}>
+                    Supprimer
+                  </Button>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
+
 
