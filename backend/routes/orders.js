@@ -10,7 +10,9 @@ router.post("/", async (req, res) => {
     const cartKey = "cart:demo-user";
 
     const cartData = await redis.get(cartKey);
-    if (!cartData) return res.status(400).json({ error: "Cart is empty" });
+    if (!cartData) {
+      return res.status(400).json({ error: "Cart is empty" });
+    }
 
     const cart = JSON.parse(cartData);
 
@@ -27,11 +29,13 @@ router.post("/", async (req, res) => {
 
     await redis.del(cartKey);
 
-    res.json({ message: "Order placed", orderId: result.insertedId });
+    res.json({ message: "Order successfully placed", orderId: result.insertedId });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to create order" });
   }
 });
+
 
 // GET all orders
 router.get("/", async (req, res) => {

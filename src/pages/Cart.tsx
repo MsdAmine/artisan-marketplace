@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
+import { createOrder } from "@/api/orders";
 
 // ANIMATION CLASSES
 const fade = "transition-all duration-300 ease-in-out";
@@ -149,11 +150,14 @@ export default function Cart() {
 
           <Button
             className="w-full mt-6 py-3 text-lg"
-            onClick={() => {
+            onClick={async () => {
+              const result = await createOrder(); // <-- CALL BACKEND
+
               toast({
                 title: "Commande validée !",
                 description: "Votre commande a été enregistrée.",
               });
+
               setCheckoutOpen(false);
             }}
           >
