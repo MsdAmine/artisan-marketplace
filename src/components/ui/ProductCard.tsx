@@ -18,11 +18,16 @@ export default function ProductCard({ p }: any) {
         className="shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-200 cursor-pointer"
         onClick={() => setOpen(true)}
       >
-        {p.image && (
+        {p.image ? (
           <img
-            src={`http://localhost:3000${p.image}`}
-            className="w-full h-40 object-cover rounded-t-lg"
+            src={p.image}
+            alt={p.name}
+            className="w-full h-48 object-cover rounded"
           />
+        ) : (
+          <div className="w-full h-48 bg-gray-200 rounded flex items-center justify-center text-gray-500">
+            No image
+          </div>
         )}
 
         <CardHeader>
