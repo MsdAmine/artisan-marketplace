@@ -1,98 +1,160 @@
 const express = require("express");
 const router = express.Router();
-const redis = require("../db/redis");
 const { connectMongo } = require("../db/mongo");
+const redis = require("../db/redis");
 const { ObjectId } = require("mongodb");
 
-// Load user's cart
-async function loadCart(userId) {
-  const data = await redis.get(`cart:${userId}`);
-  return data
-    ? JSON.parse(data)
-    : { items: [], totalAmount: 0, currency: "MAD" };
-}
-
-// GET /api/cart
-router.get("/", async (req, res) => {
-  const cart = await loadCart("demo-user");
-  res.json(cart);
-});
-
-// POST /api/cart/items  (Add item)
-router.post("/items", async (req, res) => {
-  const { productId, quantity } = req.body;
-
-  const db = await connectMongo();
-  let product;
-
+// Create order from cart
+router.post("/", async (req, res) => {
   try {
-    product = await db
-      .collection("products")
-      .findOne({ _id: new ObjectId(productId) });
+    const db = await connectMongo();
+
+    const cart = await redis.get("cart:demo-user");
+    const cartData = JSON.parse(cart || "{}");
+
+    if (!cartData.items || cartData.items.length === 0) {
+      return res.status(400).json({ error: "Panier vide" });
+    }
+
+    const newOrder = {
+      orderNumber: "ORD-" + Date.now(),
+      items: cartData.items.map(i => ({
+        productName: i.productName,
+        productId: i.productId,
+        quantity: i.quantity,
+        subtotal: i.subtotal,
+        image: i.image
+      })),
+      totalAmount: cartData.totalAmount,
+      
+      // Add user identifier
+      userId: "demo-user", // In real app, this would come from auth
+      
+      // ⭐ DEFAULT STATUS
+      status: "processing",
+
+      // ⭐ Payment (replace later if needed)
+      paymentMethod: "cash_on_delivery",
+
+      // ⭐ Delivery info (placeholder for now)
+      deliveryAddress: {
+        name: "Client",
+        street: "Adresse inconnue",
+        city: "Ville inconnue",
+        phone: "",
+        email: ""
+      },
+
+      createdAt: new Date(),
+      estimatedDelivery: null,
+      deliveredAt: null
+    };
+
+    const result = await db.collection("orders").insertOne(newOrder);
+
+    // Empty the cart
+    await redis.del("cart:demo-user");
+
+    res.json({ success: true, orderId: result.insertedId });
+
   } catch (err) {
-    return res.status(400).json({ error: "Invalid productId" });
+    console.log(err);
+    res.status(500).json({ error: err.message });
   }
-
-  if (!product) {
-    return res.status(404).json({ error: "Product not found" });
-  }
-
-  const cart = await loadCart("demo-user");
-  const existing = cart.items.find((i) => i.productId === productId);
-
-  if (existing) {
-    existing.quantity += quantity;
-    existing.subtotal = existing.quantity * existing.unitPrice;
-  } else {
-    cart.items.push({
-      productId,
-      productName: product.name,
-      unitPrice: product.price,
-      quantity,
-      subtotal: quantity * product.price,
-      artisanId: product.artisanId,
-      currency: "MAD",
-    });
-  }
-
-  cart.totalAmount = cart.items.reduce((s, x) => s + x.subtotal, 0);
-
-  await redis.set(`cart:demo-user`, JSON.stringify(cart));
-  res.json(cart);
 });
 
-// PUT /api/cart/items/:productId  (Update quantity)
-router.put("/items/:productId", async (req, res) => {
-  const { productId } = req.params;
-  const { quantity } = req.body;
+// GET all orders (for admin)
+router.get("/", async (req, res) => {
+  try {
+    const db = await connectMongo();
+    const orders = await db.collection("orders").find().toArray();
 
-  const cart = await loadCart("demo-user");
-  const item = cart.items.find((i) => i.productId === productId);
-
-  if (!item) {
-    return res.status(404).json({ error: "Item not found in cart" });
+    console.log("Fetched orders:", orders);
+    res.json(orders);
+  } catch (err) {
+    console.error("❌ Orders API error:", err);
+    res.status(500).json({ error: err.message });
   }
-
-  item.quantity = quantity;
-  item.subtotal = item.unitPrice * item.quantity;
-
-  cart.totalAmount = cart.items.reduce((s, x) => s + x.subtotal, 0);
-
-  await redis.set(`cart:demo-user`, JSON.stringify(cart));
-  res.json(cart);
 });
 
-// DELETE /api/cart/items/:productId  (Remove item)
-router.delete("/items/:productId", async (req, res) => {
-  const { productId } = req.params;
+// GET orders for specific user (Add this route!)
+router.get("/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const db = await connectMongo();
+    
+    console.log(`Fetching orders for user: ${userId}`);
+    
+    const orders = await db.collection("orders")
+      .find({ userId: userId })
+      .sort({ createdAt: -1 }) // Newest first
+      .toArray();
 
-  const cart = await loadCart("demo-user");
-  cart.items = cart.items.filter((i) => i.productId !== productId);
+    console.log(`Found ${orders.length} orders for user ${userId}`);
+    res.json(orders);
+  } catch (err) {
+    console.error("❌ User orders API error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  cart.totalAmount = cart.items.reduce((s, x) => s + x.subtotal, 0);
+// GET single order by ID
+router.get("/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const db = await connectMongo();
+    
+    let query;
+    if (ObjectId.isValid(orderId)) {
+      query = { _id: new ObjectId(orderId) };
+    } else {
+      query = { orderNumber: orderId };
+    }
+    
+    const order = await db.collection("orders").findOne(query);
+    
+    if (!order) {
+      return res.status(404).json({ error: "Commande non trouvée" });
+    }
+    
+    res.json(order);
+  } catch (err) {
+    console.error("❌ Single order API error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
-  await redis.set(`cart:demo-user`, JSON.stringify(cart));
-  res.json(cart);
+// Update order status
+router.patch("/:orderId", async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({ error: "Status requis" });
+    }
+    
+    const db = await connectMongo();
+    
+    const updateData = { status };
+    if (status === "delivered") {
+      updateData.deliveredAt = new Date();
+    }
+    
+    const result = await db.collection("orders").updateOne(
+      { _id: new ObjectId(orderId) },
+      { $set: updateData }
+    );
+    
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ error: "Commande non trouvée" });
+    }
+    
+    res.json({ success: true, updated: result.modifiedCount });
+  } catch (err) {
+    console.error("❌ Update order error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 module.exports = router;

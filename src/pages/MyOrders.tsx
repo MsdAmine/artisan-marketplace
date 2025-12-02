@@ -1,28 +1,28 @@
 import { useEffect, useState } from "react";
 import { getOrders } from "@/api/orders";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
   CardTitle,
-  CardFooter 
+  CardFooter,
 } from "@/components/ui/card";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription 
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  Truck, 
-  Home, 
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  Truck,
+  Home,
   Receipt,
   Download,
   ArrowRight,
@@ -35,7 +35,8 @@ import {
   Phone,
   Mail,
   ShoppingBag,
-  RefreshCw
+  RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 
 export default function MyOrders() {
@@ -44,103 +45,17 @@ export default function MyOrders() {
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
-
-  // Mock orders data structure (in real app, replace with actual API)
-  const mockOrders = [
-    {
-      _id: "1",
-      orderNumber: "ORD-2024-0012",
-      createdAt: "2024-03-15T10:30:00Z",
-      items: [
-        { productName: "Tapis berbère premium", quantity: 1, subtotal: 890, image: "/tapis.jpg" },
-        { productName: "Poterie artisanale", quantity: 2, subtotal: 340, image: "/poterie.jpg" }
-      ],
-      totalAmount: 1230,
-      status: "delivered",
-      deliveryAddress: {
-        name: "John Doe",
-        street: "123 Rue de la Paix",
-        city: "Casablanca",
-        phone: "+212 6 12 34 56 78",
-        email: "john@example.com"
-      },
-      paymentMethod: "credit_card",
-      estimatedDelivery: "2024-03-20",
-      deliveredAt: "2024-03-19T14:20:00Z"
-    },
-    {
-      _id: "2",
-      orderNumber: "ORD-2024-0011",
-      createdAt: "2024-03-10T14:45:00Z",
-      items: [
-        { productName: "Couscoussière en cuivre", quantity: 1, subtotal: 650, image: "/couscoussiere.jpg" }
-      ],
-      totalAmount: 650,
-      status: "shipped",
-      deliveryAddress: {
-        name: "Jane Smith",
-        street: "456 Avenue Mohammed V",
-        city: "Rabat",
-        phone: "+212 6 98 76 54 32",
-        email: "jane@example.com"
-      },
-      paymentMethod: "paypal",
-      estimatedDelivery: "2024-03-18",
-      trackingNumber: "TRK789456123"
-    },
-    {
-      _id: "3",
-      orderNumber: "ORD-2024-0010",
-      createdAt: "2024-03-05T09:15:00Z",
-      items: [
-        { productName: "Lanterne marocaine", quantity: 3, subtotal: 450, image: "/lanterne.jpg" },
-        { productName: "Plateau en bois d'olivier", quantity: 1, subtotal: 280, image: "/plateau.jpg" },
-        { productName: "Théière artisanale", quantity: 2, subtotal: 360, image: "/theiere.jpg" }
-      ],
-      totalAmount: 1090,
-      status: "processing",
-      deliveryAddress: {
-        name: "Robert Johnson",
-        street: "789 Boulevard Hassan II",
-        city: "Marrakech",
-        phone: "+212 6 55 44 33 22",
-        email: "robert@example.com"
-      },
-      paymentMethod: "cash_on_delivery",
-      estimatedDelivery: "2024-03-22"
-    },
-    {
-      _id: "4",
-      orderNumber: "ORD-2024-0009",
-      createdAt: "2024-02-28T16:20:00Z",
-      items: [
-        { productName: "Babouche marocaine", quantity: 2, subtotal: 240, image: "/babouche.jpg" }
-      ],
-      totalAmount: 240,
-      status: "cancelled",
-      deliveryAddress: {
-        name: "Sarah Wilson",
-        street: "101 Rue des Artisans",
-        city: "Fès",
-        phone: "+212 6 11 22 33 44",
-        email: "sarah@example.com"
-      },
-      paymentMethod: "credit_card",
-      cancellationReason: "Changed mind"
-    }
-  ];
+  const [error, setError] = useState<string | null>(null);
 
   async function loadOrders() {
     setLoading(true);
+    setError(null);
     try {
-      // Uncomment for real API call
-      // const data = await getOrders();
-      // setOrders(data);
-      
-      // Using mock data for now
-      setOrders(mockOrders);
+      const data = await getOrders();
+      setOrders(data);
     } catch (error) {
       console.error("Failed to load orders:", error);
+      setError("Impossible de charger vos commandes. Veuillez réessayer.");
     } finally {
       setLoading(false);
     }
@@ -151,7 +66,7 @@ export default function MyOrders() {
   }, []);
 
   // Filter orders based on status
-  const filteredOrders = orders.filter(order => {
+  const filteredOrders = orders.filter((order) => {
     if (activeFilter === "all") return true;
     return order.status === activeFilter;
   });
@@ -172,21 +87,56 @@ export default function MyOrders() {
 
   const getStatusInfo = (status: string) => {
     const statusMap: any = {
-      processing: { label: "En traitement", icon: Clock, color: "bg-amber-100 text-amber-800 border-amber-200" },
-      shipped: { label: "Expédiée", icon: Truck, color: "bg-blue-100 text-blue-800 border-blue-200" },
-      delivered: { label: "Livrée", icon: CheckCircle, color: "bg-emerald-100 text-emerald-800 border-emerald-200" },
-      cancelled: { label: "Annulée", icon: Clock, color: "bg-red-100 text-red-800 border-red-200" }
+      processing: {
+        label: "En traitement",
+        icon: Clock,
+        color: "bg-amber-100 text-amber-800 border-amber-200",
+      },
+      shipped: {
+        label: "Expédiée",
+        icon: Truck,
+        color: "bg-blue-100 text-blue-800 border-blue-200",
+      },
+      delivered: {
+        label: "Livrée",
+        icon: CheckCircle,
+        color: "bg-emerald-100 text-emerald-800 border-emerald-200",
+      },
+      cancelled: {
+        label: "Annulée",
+        icon: Clock,
+        color: "bg-red-100 text-red-800 border-red-200",
+      },
     };
-    return statusMap[status] || { label: "Inconnu", icon: Clock, color: "bg-gray-100 text-gray-800 border-gray-200" };
+    return (
+      statusMap[status] || {
+        label: "Inconnu",
+        icon: Clock,
+        color: "bg-gray-100 text-gray-800 border-gray-200",
+      }
+    );
   };
 
   const getPaymentMethodInfo = (method: string) => {
     const methods: any = {
       credit_card: "Carte bancaire",
       paypal: "PayPal",
-      cash_on_delivery: "Paiement à la livraison"
+      cash_on_delivery: "Paiement à la livraison",
     };
     return methods[method] || method;
+  };
+
+  // Format date for display
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString("fr-FR", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch (e) {
+      return "Date inconnue";
+    }
   };
 
   if (loading) {
@@ -194,7 +144,28 @@ export default function MyOrders() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Chargement de vos commandes...</p>
+          <p className="text-muted-foreground">
+            Chargement de vos commandes...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="max-w-md text-center">
+          <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-semibold text-foreground mb-2">
+            Erreur de chargement
+          </h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button onClick={loadOrders} className="rounded-apple">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Réessayer
+          </Button>
         </div>
       </div>
     );
@@ -224,263 +195,354 @@ export default function MyOrders() {
             </Button>
           </div>
 
-          {/* Stats Summary */}
-          <div className="grid grid-cols-4 gap-4 mb-8">
-            <Card className="rounded-apple border-border">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total des commandes</p>
-                    <p className="text-2xl font-semibold">{orders.length}</p>
-                  </div>
-                  <div className="h-10 w-10 rounded-apple bg-primary/10 flex items-center justify-center">
-                    <ShoppingBag className="h-5 w-5 text-primary" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-apple border-border">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total dépensé</p>
-                    <p className="text-2xl font-semibold">
-                      {orders.reduce((sum, order) => sum + order.totalAmount, 0)} MAD
-                    </p>
-                  </div>
-                  <div className="h-10 w-10 rounded-apple bg-emerald-100 flex items-center justify-center">
-                    <CreditCard className="h-5 w-5 text-emerald-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-apple border-border">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">En cours</p>
-                    <p className="text-2xl font-semibold">
-                      {orders.filter(o => o.status === "processing" || o.status === "shipped").length}
-                    </p>
-                  </div>
-                  <div className="h-10 w-10 rounded-apple bg-blue-100 flex items-center justify-center">
-                    <Clock className="h-5 w-5 text-blue-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-apple border-border">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Livrées</p>
-                    <p className="text-2xl font-semibold">
-                      {orders.filter(o => o.status === "delivered").length}
-                    </p>
-                  </div>
-                  <div className="h-10 w-10 rounded-apple bg-emerald-100 flex items-center justify-center">
-                    <CheckCircle className="h-5 w-5 text-emerald-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Filters and Controls */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex gap-2">
-            <Button
-              variant={activeFilter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveFilter("all")}
-              className="rounded-apple"
-            >
-              Toutes ({orders.length})
-            </Button>
-            <Button
-              variant={activeFilter === "processing" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveFilter("processing")}
-              className="rounded-apple"
-            >
-              En traitement ({orders.filter(o => o.status === "processing").length})
-            </Button>
-            <Button
-              variant={activeFilter === "shipped" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveFilter("shipped")}
-              className="rounded-apple"
-            >
-              Expédiées ({orders.filter(o => o.status === "shipped").length})
-            </Button>
-            <Button
-              variant={activeFilter === "delivered" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setActiveFilter("delivered")}
-              className="rounded-apple"
-            >
-              Livrées ({orders.filter(o => o.status === "delivered").length})
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground">
-              {sortedOrders.length} commande{sortedOrders.length !== 1 ? 's' : ''}
-            </div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="appearance-none bg-white border border-border rounded-apple pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
-            >
-              <option value="newest">Plus récentes</option>
-              <option value="oldest">Plus anciennes</option>
-              <option value="amount-high">Montant élevé</option>
-              <option value="amount-low">Montant faible</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Orders List */}
-        <div className="space-y-4">
-          {sortedOrders.length === 0 ? (
-            <Card className="rounded-apple border-border">
-              <CardContent className="p-12 text-center">
-                <Package className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-muted-foreground mb-2">
-                  Aucune commande trouvée
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  {activeFilter === "all" 
-                    ? "Vous n'avez passé aucune commande pour le moment."
-                    : "Aucune commande ne correspond à ce filtre."}
-                </p>
-                {activeFilter !== "all" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => setActiveFilter("all")}
-                    className="rounded-apple"
-                  >
-                    Voir toutes les commandes
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          ) : (
-            sortedOrders.map((order) => {
-              const statusInfo = getStatusInfo(order.status);
-              const StatusIcon = statusInfo.icon;
-
-              return (
-                <Card 
-                  key={order._id}
-                  className="rounded-apple border-border hover:shadow-sm transition-shadow cursor-pointer"
-                  onClick={() => setSelectedOrder(order)}
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-4">
-                          <Badge className={`${statusInfo.color} rounded-full px-3 py-1`}>
-                            <StatusIcon className="h-3 w-3 mr-1" />
-                            {statusInfo.label}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            {order.orderNumber}
-                          </span>
-                          <span className="text-sm text-muted-foreground flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(order.createdAt).toLocaleDateString('fr-FR', {
-                              day: 'numeric',
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-3 gap-8">
-                          <div>
-                            <h3 className="font-semibold mb-2">Articles</h3>
-                            <div className="space-y-1">
-                              {order.items.slice(0, 2).map((item: any, index: number) => (
-                                <div key={index} className="flex items-center justify-between text-sm">
-                                  <span className="truncate max-w-[180px]">{item.productName}</span>
-                                  <span className="font-medium">{item.quantity} × {item.subtotal / item.quantity} MAD</span>
-                                </div>
-                              ))}
-                              {order.items.length > 2 && (
-                                <p className="text-sm text-muted-foreground">
-                                  + {order.items.length - 2} autre{order.items.length - 2 > 1 ? 's' : ''} article{order.items.length - 2 > 1 ? 's' : ''}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold mb-2">Livraison</h3>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex items-center gap-2">
-                                <MapPin className="h-3 w-3 text-muted-foreground" />
-                                <span>{order.deliveryAddress.city}</span>
-                              </div>
-                              {order.estimatedDelivery && (
-                                <div className="flex items-center gap-2">
-                                  <Truck className="h-3 w-3 text-muted-foreground" />
-                                  <span>
-                                    {statusInfo.label === "Livrée" 
-                                      ? `Livrée le ${new Date(order.deliveredAt || order.estimatedDelivery).toLocaleDateString('fr-FR')}`
-                                      : `Estimation: ${new Date(order.estimatedDelivery).toLocaleDateString('fr-FR')}`
-                                    }
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div>
-                            <h3 className="font-semibold mb-2">Paiement</h3>
-                            <div className="space-y-1 text-sm">
-                              <div className="flex items-center gap-2">
-                                <CreditCard className="h-3 w-3 text-muted-foreground" />
-                                <span>{getPaymentMethodInfo(order.paymentMethod)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="ml-8 text-right">
-                        <div className="text-2xl font-bold mb-2">{order.totalAmount} MAD</div>
-                        <div className="flex items-center gap-2 text-primary text-sm">
-                          <span>Voir les détails</span>
-                          <ChevronRight className="h-4 w-4" />
-                        </div>
-                      </div>
+          {/* Stats Summary - Only show if there are orders */}
+          {orders.length > 0 && (
+            <div className="grid grid-cols-4 gap-4 mb-8">
+              <Card className="rounded-apple border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Total des commandes
+                      </p>
+                      <p className="text-2xl font-semibold">{orders.length}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })
+                    <div className="h-10 w-10 rounded-apple bg-primary/10 flex items-center justify-center">
+                      <ShoppingBag className="h-5 w-5 text-primary" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-apple border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">
+                        Total dépensé
+                      </p>
+                      <p className="text-2xl font-semibold">
+                        {orders.reduce(
+                          (sum, order) => sum + (order.totalAmount || 0),
+                          0
+                        )}{" "}
+                        MAD
+                      </p>
+                    </div>
+                    <div className="h-10 w-10 rounded-apple bg-emerald-100 flex items-center justify-center">
+                      <CreditCard className="h-5 w-5 text-emerald-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-apple border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">En cours</p>
+                      <p className="text-2xl font-semibold">
+                        {
+                          orders.filter(
+                            (o) =>
+                              o.status === "processing" ||
+                              o.status === "shipped"
+                          ).length
+                        }
+                      </p>
+                    </div>
+                    <div className="h-10 w-10 rounded-apple bg-blue-100 flex items-center justify-center">
+                      <Clock className="h-5 w-5 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="rounded-apple border-border">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Livrées</p>
+                      <p className="text-2xl font-semibold">
+                        {orders.filter((o) => o.status === "delivered").length}
+                      </p>
+                    </div>
+                    <div className="h-10 w-10 rounded-apple bg-emerald-100 flex items-center justify-center">
+                      <CheckCircle className="h-5 w-5 text-emerald-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
+
+        {/* Filters and Controls - Only show if there are orders */}
+        {orders.length > 0 ? (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex gap-2">
+                <Button
+                  variant={activeFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter("all")}
+                  className="rounded-apple"
+                >
+                  Toutes ({orders.length})
+                </Button>
+                <Button
+                  variant={
+                    activeFilter === "processing" ? "default" : "outline"
+                  }
+                  size="sm"
+                  onClick={() => setActiveFilter("processing")}
+                  className="rounded-apple"
+                >
+                  En traitement (
+                  {orders.filter((o) => o.status === "processing").length})
+                </Button>
+                <Button
+                  variant={activeFilter === "shipped" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter("shipped")}
+                  className="rounded-apple"
+                >
+                  Expédiées (
+                  {orders.filter((o) => o.status === "shipped").length})
+                </Button>
+                <Button
+                  variant={activeFilter === "delivered" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveFilter("delivered")}
+                  className="rounded-apple"
+                >
+                  Livrées (
+                  {orders.filter((o) => o.status === "delivered").length})
+                </Button>
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="text-sm text-muted-foreground">
+                  {sortedOrders.length} commande
+                  {sortedOrders.length !== 1 ? "s" : ""}
+                </div>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="appearance-none bg-white border border-border rounded-apple pl-4 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer"
+                >
+                  <option value="newest">Plus récentes</option>
+                  <option value="oldest">Plus anciennes</option>
+                  <option value="amount-high">Montant élevé</option>
+                  <option value="amount-low">Montant faible</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Orders List */}
+            <div className="space-y-4">
+              {sortedOrders.length === 0 ? (
+                <Card className="rounded-apple border-border">
+                  <CardContent className="p-12 text-center">
+                    <Package className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">
+                      Aucune commande trouvée
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      {activeFilter === "all"
+                        ? "Vous n'avez passé aucune commande pour le moment."
+                        : "Aucune commande ne correspond à ce filtre."}
+                    </p>
+                    {activeFilter !== "all" && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setActiveFilter("all")}
+                        className="rounded-apple"
+                      >
+                        Voir toutes les commandes
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ) : (
+                sortedOrders.map((order) => {
+                  const statusInfo = getStatusInfo(order.status);
+                  const StatusIcon = statusInfo.icon;
+
+                  return (
+                    <Card
+                      key={order._id}
+                      className="rounded-apple border-border hover:shadow-sm transition-shadow cursor-pointer"
+                      onClick={() => setSelectedOrder(order)}
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-4">
+                              <Badge
+                                className={`${statusInfo.color} rounded-full px-3 py-1`}
+                              >
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {statusInfo.label}
+                              </Badge>
+                              <span className="text-sm text-muted-foreground">
+                                {order.orderNumber ||
+                                  `CMD-${order._id?.slice(-8)}`}
+                              </span>
+                              <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDate(order.createdAt)}
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-8">
+                              <div>
+                                <h3 className="font-semibold mb-2">Articles</h3>
+                                <div className="space-y-1">
+                                  {(order.items || [])
+                                    .slice(0, 2)
+                                    .map((item: any, index: number) => (
+                                      <div
+                                        key={index}
+                                        className="flex items-center justify-between text-sm"
+                                      >
+                                        <span className="truncate max-w-[180px]">
+                                          {item.productName || "Produit"}
+                                        </span>
+                                        <span className="font-medium">
+                                          {item.quantity} ×{" "}
+                                          {(item.subtotal || 0) /
+                                            (item.quantity || 1)}{" "}
+                                          MAD
+                                        </span>
+                                      </div>
+                                    ))}
+                                  {(order.items || []).length > 2 && (
+                                    <p className="text-sm text-muted-foreground">
+                                      + {(order.items || []).length - 2} autre
+                                      {(order.items || []).length - 2 > 1
+                                        ? "s"
+                                        : ""}{" "}
+                                      article
+                                      {(order.items || []).length - 2 > 1
+                                        ? "s"
+                                        : ""}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="font-semibold mb-2">
+                                  Livraison
+                                </h3>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                                    <span>
+                                      {order.deliveryAddress?.city ||
+                                        "Ville inconnue"}
+                                    </span>
+                                  </div>
+                                  {order.estimatedDelivery && (
+                                    <div className="flex items-center gap-2">
+                                      <Truck className="h-3 w-3 text-muted-foreground" />
+                                      <span>
+                                        {statusInfo.label === "Livrée"
+                                          ? `Livrée le ${formatDate(
+                                              order.deliveredAt ||
+                                                order.estimatedDelivery
+                                            )}`
+                                          : `Estimation: ${formatDate(
+                                              order.estimatedDelivery
+                                            )}`}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div>
+                                <h3 className="font-semibold mb-2">Paiement</h3>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <CreditCard className="h-3 w-3 text-muted-foreground" />
+                                    <span>
+                                      {getPaymentMethodInfo(
+                                        order.paymentMethod ||
+                                          "cash_on_delivery"
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="ml-8 text-right">
+                            <div className="text-2xl font-bold mb-2">
+                              {order.totalAmount || 0} MAD
+                            </div>
+                            <div className="flex items-center gap-2 text-primary text-sm">
+                              <span>Voir les détails</span>
+                              <ChevronRight className="h-4 w-4" />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              )}
+            </div>
+          </>
+        ) : (
+          // Empty state when no orders
+          <Card className="rounded-apple border-border">
+            <CardContent className="p-16 text-center">
+              <div className="h-32 w-32 rounded-apple bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center mx-auto mb-8">
+                <Package className="h-16 w-16 text-primary/50" />
+              </div>
+              <h2 className="text-2xl font-semibold text-foreground mb-4">
+                Aucune commande
+              </h2>
+              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                Vous n'avez pas encore passé de commande. Parcourez notre
+                catalogue et découvrez des produits artisanaux uniques.
+              </p>
+              <Button asChild className="rounded-apple gap-2 px-8" size="lg">
+                <a href="/">Découvrir les produits</a>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Order Details Dialog */}
-      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-3xl rounded-apple">
+      <Dialog
+        open={!!selectedOrder}
+        onOpenChange={() => setSelectedOrder(null)}
+      >
+        <DialogContent className="max-w-3xl rounded-apple max-h-[85vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Détails de la commande</DialogTitle>
+            <DialogTitle className="text-2xl">
+              Détails de la commande
+            </DialogTitle>
             <DialogDescription>
-              {selectedOrder?.orderNumber} • Passée le {selectedOrder && new Date(selectedOrder.createdAt).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
+              {selectedOrder?.orderNumber ||
+                `CMD-${selectedOrder?._id?.slice(-8)}`}{" "}
+              • Passée le {selectedOrder && formatDate(selectedOrder.createdAt)}
+              {selectedOrder?.createdAt && (
+                <span className="ml-2 text-xs text-muted-foreground">
+                  {new Date(selectedOrder.createdAt).toLocaleTimeString(
+                    "fr-FR",
+                    {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }
+                  )}
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
 
@@ -489,32 +551,63 @@ export default function MyOrders() {
               {/* Order Summary */}
               <Card className="rounded-apple border-border">
                 <CardHeader>
-                  <CardTitle className="text-lg">Résumé de la commande</CardTitle>
+                  <CardTitle className="text-lg">
+                    Résumé de la commande
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {selectedOrder.items.map((item: any, index: number) => (
-                      <div key={index} className="flex items-center justify-between border-b border-border pb-4">
-                        <div className="flex items-center gap-4">
-                          <div className="h-16 w-16 rounded-apple bg-muted flex items-center justify-center">
-                            <Package className="h-6 w-6 text-muted-foreground" />
+                    {(selectedOrder.items || []).map(
+                      (item: any, index: number) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between border-b border-border pb-4"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="h-16 w-16 rounded-apple bg-muted flex items-center justify-center">
+                              {item.image ? (
+                                <img
+                                  src={item.image}
+                                  alt={item.productName}
+                                  className="h-full w-full object-cover rounded-apple"
+                                />
+                              ) : (
+                                <Package className="h-6 w-6 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-medium">
+                                {item.productName || "Produit"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Quantité: {item.quantity || 1}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium">{item.productName}</p>
-                            <p className="text-sm text-muted-foreground">Quantité: {item.quantity}</p>
+                          <div className="text-right">
+                            <p className="font-semibold">
+                              {item.subtotal || 0} MAD
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {(item.subtotal || 0) / (item.quantity || 1)} MAD
+                              l'unité
+                            </p>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-semibold">{item.subtotal} MAD</p>
-                          <p className="text-sm text-muted-foreground">{item.subtotal / item.quantity} MAD l'unité</p>
-                        </div>
-                      </div>
-                    ))}
-                    
+                      )
+                    )}
+
                     <div className="pt-4 space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>Sous-total</span>
-                        <span>{selectedOrder.items.reduce((sum: number, item: any) => sum + item.subtotal, 0)} MAD</span>
+                        <span>
+                          {(selectedOrder.items || []).reduce(
+                            (sum: number, item: any) =>
+                              sum + (item.subtotal || 0),
+                            0
+                          )}{" "}
+                          MAD
+                        </span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Livraison</span>
@@ -522,7 +615,7 @@ export default function MyOrders() {
                       </div>
                       <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
                         <span>Total</span>
-                        <span>{selectedOrder.totalAmount} MAD</span>
+                        <span>{selectedOrder.totalAmount || 0} MAD</span>
                       </div>
                     </div>
                   </div>
@@ -539,18 +632,29 @@ export default function MyOrders() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2">
-                    <p className="font-medium">{selectedOrder.deliveryAddress.name}</p>
-                    <p className="text-sm">{selectedOrder.deliveryAddress.street}</p>
-                    <p className="text-sm">{selectedOrder.deliveryAddress.city}</p>
+                    <p className="font-medium">
+                      {selectedOrder.deliveryAddress?.name || "Client"}
+                    </p>
+                    <p className="text-sm">
+                      {selectedOrder.deliveryAddress?.street ||
+                        "Adresse inconnue"}
+                    </p>
+                    <p className="text-sm">
+                      {selectedOrder.deliveryAddress?.city || "Ville inconnue"}
+                    </p>
                     <div className="pt-2 space-y-1">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-3 w-3" />
-                        {selectedOrder.deliveryAddress.phone}
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Mail className="h-3 w-3" />
-                        {selectedOrder.deliveryAddress.email}
-                      </div>
+                      {selectedOrder.deliveryAddress?.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Phone className="h-3 w-3" />
+                          {selectedOrder.deliveryAddress.phone}
+                        </div>
+                      )}
+                      {selectedOrder.deliveryAddress?.email && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <Mail className="h-3 w-3" />
+                          {selectedOrder.deliveryAddress.email}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -564,16 +668,28 @@ export default function MyOrders() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Méthode de paiement</p>
-                      <p className="font-medium">{getPaymentMethodInfo(selectedOrder.paymentMethod)}</p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Méthode de paiement
+                      </p>
+                      <p className="font-medium">
+                        {getPaymentMethodInfo(
+                          selectedOrder.paymentMethod || "cash_on_delivery"
+                        )}
+                      </p>
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground mb-1">Statut</p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Statut
+                      </p>
                       {(() => {
-                        const statusInfo = getStatusInfo(selectedOrder.status);
+                        const statusInfo = getStatusInfo(
+                          selectedOrder.status || "processing"
+                        );
                         const StatusIcon = statusInfo.icon;
                         return (
-                          <Badge className={`${statusInfo.color} rounded-full px-3 py-1`}>
+                          <Badge
+                            className={`${statusInfo.color} rounded-full px-3 py-1`}
+                          >
                             <StatusIcon className="h-3 w-3 mr-1" />
                             {statusInfo.label}
                           </Badge>
@@ -583,14 +699,12 @@ export default function MyOrders() {
                     {selectedOrder.estimatedDelivery && (
                       <div>
                         <p className="text-sm text-muted-foreground mb-1">
-                          {selectedOrder.status === "delivered" ? "Livrée le" : "Estimation de livraison"}
+                          {selectedOrder.status === "delivered"
+                            ? "Livrée le"
+                            : "Estimation de livraison"}
                         </p>
                         <p className="font-medium">
-                          {new Date(selectedOrder.estimatedDelivery).toLocaleDateString('fr-FR', {
-                            day: 'numeric',
-                            month: 'long',
-                            year: 'numeric'
-                          })}
+                          {formatDate(selectedOrder.estimatedDelivery)}
                         </p>
                       </div>
                     )}
@@ -604,7 +718,7 @@ export default function MyOrders() {
                   <Download className="h-4 w-4" />
                   Télécharger la facture
                 </Button>
-                <Button 
+                <Button
                   onClick={() => setSelectedOrder(null)}
                   className="rounded-apple"
                 >

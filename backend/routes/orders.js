@@ -7,34 +7,58 @@ const redis = require("../db/redis");
 router.post("/", async (req, res) => {
   try {
     const db = await connectMongo();
-    const cartKey = "cart:demo-user";
 
-    const cartData = await redis.get(cartKey);
-    if (!cartData) {
-      return res.status(400).json({ error: "Cart is empty" });
+    const cart = await redis.get("cart:demo-user");
+    const cartData = JSON.parse(cart || "{}");
+
+    if (!cartData.items || cartData.items.length === 0) {
+      return res.status(400).json({ error: "Panier vide" });
     }
 
-    const cart = JSON.parse(cartData);
+    const newOrder = {
+      orderNumber: "ORD-" + Date.now(),
+      items: cartData.items.map(i => ({
+        productName: i.productName,
+        productId: i.productId,
+        quantity: i.quantity,
+        subtotal: i.subtotal,
+        image: i.image
+      })),
+      totalAmount: cartData.totalAmount,
 
-    const order = {
-      customerId: "demo-user",
-      items: cart.items,
-      totalAmount: cart.totalAmount,
-      currency: "MAD",
-      status: "PAID",
+      // ⭐ DEFAULT STATUS
+      status: "processing",
+
+      // ⭐ Payment (replace later if needed)
+      paymentMethod: "cash_on_delivery",
+
+      // ⭐ Delivery info (placeholder for now)
+      deliveryAddress: {
+        name: "Client",
+        street: "Adresse inconnue",
+        city: "Ville inconnue",
+        phone: "",
+        email: ""
+      },
+
       createdAt: new Date(),
+      estimatedDelivery: null,
+      deliveredAt: null
     };
 
-    const result = await db.collection("orders").insertOne(order);
+    const result = await db.collection("orders").insertOne(newOrder);
 
-    await redis.del(cartKey);
+    // Empty the cart
+    await redis.del("cart:demo-user");
 
-    res.json({ message: "Order successfully placed", orderId: result.insertedId });
+    res.json({ success: true, orderId: result.insertedId });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to create order" });
+    console.log(err);
+    res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // GET all orders
