@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/ui/ProductCard";
-import { 
-  Filter, 
-  Grid3x3, 
-  List, 
-  Search, 
+import {
+  Filter,
+  Grid3x3,
+  List,
+  Search,
   ChevronDown,
   X,
   Star,
   TrendingUp,
-  Sparkles
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import * as TabsUI from "@radix-ui/react-tabs";
+const [recommended, setRecommended] = useState([]);
 
 const Tabs = TabsUI.Root;
 const TabsList = TabsUI.List;
@@ -33,7 +34,10 @@ export default function Catalog() {
   const [showFilters, setShowFilters] = useState(false);
 
   // Extract unique categories from products
-  const categories = ["all", ...new Set(products.map(p => p.category).filter(Boolean))];
+  const categories = [
+    "all",
+    ...new Set(products.map((p) => p.category).filter(Boolean)),
+  ];
 
   useEffect(() => {
     setLoading(true);
@@ -47,26 +51,55 @@ export default function Catalog() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Load Neo4j recommendations
+  useEffect(() => {
+    async function loadRecommendations() {
+      try {
+        const saved = localStorage.getItem("auth");
+        if (!saved) return; // user not logged in → skip
+
+        const { user } = JSON.parse(saved);
+
+        const res = await fetch(
+          `http://localhost:3000/api/recommendations/${user.id}`
+        );
+
+        if (!res.ok) return;
+
+        const data = await res.json();
+        setRecommended(data.products);
+      } catch (err) {
+        console.error("Failed to load recommendations:", err);
+      }
+    }
+
+    loadRecommendations();
+  }, []);
+
   // Filter and sort products
   useEffect(() => {
     let result = [...products];
 
     // Apply search filter
     if (searchTerm) {
-      result = result.filter(product =>
-        product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      result = result.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          product.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     // Apply category filter
     if (selectedCategory !== "all") {
-      result = result.filter(product => product.category === selectedCategory);
+      result = result.filter(
+        (product) => product.category === selectedCategory
+      );
     }
 
     // Apply price filter
-    result = result.filter(product => 
-      product.price >= priceRange[0] && product.price <= priceRange[1]
+    result = result.filter(
+      (product) =>
+        product.price >= priceRange[0] && product.price <= priceRange[1]
     );
 
     // Apply sorting
@@ -185,11 +218,14 @@ export default function Catalog() {
                             : "hover:bg-muted"
                         }`}
                       >
-                        <span className="capitalize">{category === "all" ? "Toutes" : category}</span>
+                        <span className="capitalize">
+                          {category === "all" ? "Toutes" : category}
+                        </span>
                         <Badge variant="secondary" className="text-xs">
-                          {category === "all" 
-                            ? products.length 
-                            : products.filter(p => p.category === category).length}
+                          {category === "all"
+                            ? products.length
+                            : products.filter((p) => p.category === category)
+                                .length}
                         </Badge>
                       </button>
                     ))}
@@ -207,7 +243,9 @@ export default function Catalog() {
                       min="0"
                       max="5000"
                       value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
+                      onChange={(e) =>
+                        setPriceRange([priceRange[0], parseInt(e.target.value)])
+                      }
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground mt-2">
@@ -224,9 +262,20 @@ export default function Catalog() {
                   </h4>
                   <div className="space-y-2">
                     {[
-                      { label: "En stock", count: products.filter(p => p.stock > 0).length },
-                      { label: "Stock limité", count: products.filter(p => p.stock > 0 && p.stock < 5).length },
-                      { label: "Bientôt disponible", count: products.filter(p => p.stock === 0).length }
+                      {
+                        label: "En stock",
+                        count: products.filter((p) => p.stock > 0).length,
+                      },
+                      {
+                        label: "Stock limité",
+                        count: products.filter(
+                          (p) => p.stock > 0 && p.stock < 5
+                        ).length,
+                      },
+                      {
+                        label: "Bientôt disponible",
+                        count: products.filter((p) => p.stock === 0).length,
+                      },
                     ].map((status) => (
                       <button
                         key={status.label}
@@ -251,19 +300,24 @@ export default function Catalog() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Prix moyen</span>
                     <span className="font-semibold">
-                      {Math.round(products.reduce((acc, p) => acc + p.price, 0) / products.length) || 0} MAD
+                      {Math.round(
+                        products.reduce((acc, p) => acc + p.price, 0) /
+                          products.length
+                      ) || 0}{" "}
+                      MAD
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Artisans actifs</span>
                     <span className="font-semibold">
-                      {new Set(products.map(p => p.artisan)).size}
+                      {new Set(products.map((p) => p.artisan)).size}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm">Note moyenne</span>
                     <span className="font-semibold flex items-center gap-1">
-                      4.8 <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      4.8{" "}
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                     </span>
                   </div>
                 </div>
@@ -276,10 +330,10 @@ export default function Catalog() {
             {/* Controls Bar */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                
-
                 <div className="text-sm text-muted-foreground">
-                  {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''} trouvé{filteredProducts.length !== 1 ? 's' : ''}
+                  {filteredProducts.length} produit
+                  {filteredProducts.length !== 1 ? "s" : ""} trouvé
+                  {filteredProducts.length !== 1 ? "s" : ""}
                 </div>
               </div>
 
@@ -322,24 +376,40 @@ export default function Catalog() {
               </div>
             </div>
 
+            {/* Recommended Section */}
+            {recommended.length > 0 && (
+              <div className="mb-12">
+                <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Recommandé pour vous
+                </h2>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {recommended.map((p) => (
+                    <ProductCard key={p._id} p={p} viewMode="grid" />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Products Grid */}
             {loading ? (
               <div className="flex flex-col items-center justify-center py-24">
                 <div className="h-12 w-12 border-3 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-muted-foreground">Chargement des produits...</p>
+                <p className="text-muted-foreground">
+                  Chargement des produits...
+                </p>
               </div>
             ) : filteredProducts.length > 0 ? (
-              <div className={`gap-6 ${
-                viewMode === "grid" 
-                  ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3" 
-                  : "space-y-4"
-              }`}>
+              <div
+                className={`gap-6 ${
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+                    : "space-y-4"
+                }`}
+              >
                 {filteredProducts.map((p) => (
-                  <ProductCard 
-                    key={p._id} 
-                    p={p} 
-                    viewMode={viewMode}
-                  />
+                  <ProductCard key={p._id} p={p} viewMode={viewMode} />
                 ))}
               </div>
             ) : (
@@ -349,12 +419,10 @@ export default function Catalog() {
                   Aucun produit trouvé
                 </h3>
                 <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-                  Aucun produit ne correspond à vos critères de recherche. Essayez de modifier vos filtres.
+                  Aucun produit ne correspond à vos critères de recherche.
+                  Essayez de modifier vos filtres.
                 </p>
-                <Button
-                  onClick={resetFilters}
-                  className="rounded-apple"
-                >
+                <Button onClick={resetFilters} className="rounded-apple">
                   Réinitialiser les filtres
                 </Button>
               </div>

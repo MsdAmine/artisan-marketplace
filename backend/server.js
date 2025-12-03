@@ -17,9 +17,9 @@ const cartRoute = require("./routes/cart");
 const ordersRoute = require("./routes/orders");
 const statsRoute = require("./routes/stats");
 const authRoute = require("./routes/auth");
+const recRoute = require("./routes/recommendations");
 
 
-// Mount routes
 app.use("/api/upload", uploadRoutes);
 app.use("/api/products", productsRoute);
 app.use("/api/artisans", artisanRoute); 
@@ -27,6 +27,7 @@ app.use("/api/cart", cartRoute);
 app.use("/api/orders", ordersRoute);
 app.use("/api/stats", statsRoute);
 app.use("/api/auth", authRoute);
+app.use("/api/recommend", recRoute);
 
 async function startServer() {
   await connectMongo();
