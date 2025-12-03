@@ -7,9 +7,9 @@ import Stats from "./pages/Stats";
 import { Toaster } from "./components/ui/toaster";
 import MyOrders from "./pages/MyOrders";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import ProtectedHome from "@/components/ProtectedHome";
 import Login from "@/pages/auth/login";
 import Signup from "@/pages/auth/Signup";
-
 
 export default function App() {
   return (
@@ -19,44 +19,48 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         <Routes>
-  {/* Public */}
-  <Route path="/catalog" element={<Catalog />} />
-  <Route path="/login" element={<Login />} />
-  <Route path="/signup" element={<Signup />} />
-  <Route path="/cart" element={<Cart />} />
+          {/* Home → redirect depending on user */}
+          <Route path="/" element={<ProtectedHome />} />
 
-  {/* Customer only */}
-  <Route
-    path="/my-orders"
-    element={
-      <ProtectedRoute roles={["customer"]}>
-        <MyOrders />
-      </ProtectedRoute>
-    }
-  />
+          {/* Public */}
+          <Route path="/catalog" element={<Catalog />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/cart" element={<Cart />} />
 
-  {/* Artisan only */}
-  <Route
-    path="/artisan/dashboard"
-    element={
-      <ProtectedRoute roles={["artisan"]}>
-        <ArtisanDashboard />
-      </ProtectedRoute>
-    }
-  />
+          {/* Customer only */}
+          <Route
+            path="/my-orders"
+            element={
+              <ProtectedRoute roles={["customer"]}>
+                <MyOrders />
+              </ProtectedRoute>
+            }
+          />
 
-  {/* Admin only */}
-  <Route
-    path="/admin/dashboard"
-    element={
-      <ProtectedRoute roles={["admin"]}>
-        <Stats />
-      </ProtectedRoute>
-    }
-  />
+          {/* Artisan only */}
+          <Route
+            path="/artisan/dashboard"
+            element={
+              <ProtectedRoute roles={["artisan"]}>
+                <ArtisanDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-  <Route path="*" element={<Navigate to="/" />} />
-</Routes>
+          {/* Admin only */}
+          <Route
+            path="/admin/dashboard"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <Stats />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Not found → redirect to home */}
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
       </main>
     </div>
   );
