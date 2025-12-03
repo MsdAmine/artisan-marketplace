@@ -27,13 +27,27 @@ export default function App() {
 
       <main className="max-w-6xl mx-auto px-4 py-6">
         <Routes>
-          {/* Public */}
-          <Route path="/" element={<Catalog />} />
+          {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
-          <Route path="/cart" element={<Cart />} />
 
-          {/* Customer only */}
+          {/* Protected routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Catalog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cart"
+            element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/my-orders"
             element={
@@ -42,8 +56,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Artisan only */}
           <Route
             path="/artisan/dashboard"
             element={
@@ -52,8 +64,6 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Admin only */}
           <Route
             path="/admin/dashboard"
             element={
@@ -63,7 +73,7 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

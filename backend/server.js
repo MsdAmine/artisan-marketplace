@@ -12,7 +12,7 @@ app.use("/uploads", express.static("uploads"));
 
 const uploadRoutes = require("./routes/upload");
 const productsRoute = require("./routes/products");
-const artisanRoute = require("./routes/artisan");  // ✔️ correct
+const artisanRoute = require("./routes/artisan"); 
 const cartRoute = require("./routes/cart");
 const ordersRoute = require("./routes/orders");
 const statsRoute = require("./routes/stats");
@@ -22,7 +22,7 @@ const authRoute = require("./routes/auth");
 // Mount routes
 app.use("/api/upload", uploadRoutes);
 app.use("/api/products", productsRoute);
-app.use("/api/artisans", artisanRoute); // ✔️ correct
+app.use("/api/artisans", artisanRoute); 
 app.use("/api/cart", cartRoute);
 app.use("/api/orders", ordersRoute);
 app.use("/api/stats", statsRoute);
