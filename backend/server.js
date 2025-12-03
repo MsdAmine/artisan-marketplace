@@ -5,7 +5,6 @@ require("dotenv").config();
 const { connectMongo } = require("./db/mongo");
 
 const app = express();
-const authRoute = require("./routes/auth");
 
 app.use(cors());
 app.use(express.json());
@@ -17,6 +16,8 @@ const artisanRoute = require("./routes/artisan");  // ✔️ correct
 const cartRoute = require("./routes/cart");
 const ordersRoute = require("./routes/orders");
 const statsRoute = require("./routes/stats");
+const authRoute = require("./routes/auth");
+
 
 // Mount routes
 app.use("/api/upload", uploadRoutes);

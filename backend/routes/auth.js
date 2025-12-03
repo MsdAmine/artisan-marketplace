@@ -1,32 +1,68 @@
 const express = require("express");
-const router = express.Router();
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { getDB } = require("../db/mongo");
 
-// REGISTER
-router.post("/register", async (req, res) => {
+const router = express.Router();
+
+// Signup
+router.post("/signup", async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { name, email, password, role } = req.body;
+
+    const db = getDB();
+    const users = db.collection("users");
+
+    const existing = await users.findOne({ email });
+    if (existing) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashed, role });
 
-    res.json({ success: true });
+    const result = await users.insertOne({
+      name,
+      email,
+      password: hashed,
+      role,
+      createdAt: new Date(),
+    });
+
+    const token = jwt.sign(
+      { id: result.insertedId, role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: result.insertedId,
+        name,
+        email,
+        role
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Signup failed" });
   }
 });
 
-// LOGIN
+// Login
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ error: "User not found" });
+    const db = getDB();
+    const users = db.collection("users");
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ error: "Invalid credentials" });
+    const user = await users.findOne({ email });
+    if (!user) return res.status(400).json({ message: "Invalid email or password" });
+
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) return res.status(400).json({ message: "Invalid email or password" });
 
     const token = jwt.sign(
       { id: user._id, role: user.role },
@@ -34,9 +70,19 @@ router.post("/login", async (req, res) => {
       { expiresIn: "7d" }
     );
 
-    res.json({ token, role: user.role });
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({ message: "Login failed" });
   }
 });
 
