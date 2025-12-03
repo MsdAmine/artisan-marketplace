@@ -16,13 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import * as TabsUI from "@radix-ui/react-tabs";
-const [recommended, setRecommended] = useState([]);
-
 const Tabs = TabsUI.Root;
 const TabsList = TabsUI.List;
 const TabsTrigger = TabsUI.Trigger;
 
 export default function Catalog() {
+  const [recommended, setRecommended] = useState([]);
+
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
