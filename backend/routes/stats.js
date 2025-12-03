@@ -1,53 +1,41 @@
+// backend/routes/stats.js
 const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 
-// GET /stats/sales-by-artisan
+// GET /api/stats/sales-by-artisan
 router.get("/sales-by-artisan", async (req, res) => {
   try {
     const db = await connectMongo();
 
-    const result = await db.collection("orders").aggregate([
+    const pipeline = [
       { $unwind: "$items" },
+
+      // only count items where artisanId exists
+      { $match: { "items.artisanId": { $ne: null, $ne: "" } } },
+
       {
         $group: {
-          _id: "$items.artisanId",
+          _id: "$items.artisanId", // artisan id (string)
           totalSales: { $sum: "$items.subtotal" },
-          totalOrders: { $sum: 1 },
+          orderIds: { $addToSet: "$_id" }, // unique order count
         },
       },
-      { $sort: { totalSales: -1 } },
-    ]).toArray();
-
-    res.json(result);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to compute stats" });
-  }
-});
-
-// GET /stats/sales-by-day
-router.get("/sales-by-day", async (req, res) => {
-  try {
-    const db = await connectMongo();
-
-    const result = await db.collection("orders").aggregate([
       {
-        $group: {
-          _id: {
-            day: { $dayOfMonth: "$createdAt" },
-            month: { $month: "$createdAt" },
-            year: { $year: "$createdAt" },
-          },
-          totalSales: { $sum: "$totalAmount" },
-          totalOrders: { $sum: 1 },
+        $project: {
+          _id: 1,
+          totalSales: 1,
+          totalOrders: { $size: "$orderIds" },
         },
       },
-      { $sort: { "_id.year": -1, "_id.month": -1, "_id.day": -1 } },
-    ]).toArray();
+    ];
 
-    res.json(result);
+    const stats = await db.collection("orders").aggregate(pipeline).toArray();
+
+    res.json(stats);
   } catch (err) {
-    res.status(500).json({ error: "Failed to compute daily stats" });
+    console.error("SALES BY ARTISAN ERROR", err);
+    res.status(500).json({ error: "Failed to compute stats" });
   }
 });
 

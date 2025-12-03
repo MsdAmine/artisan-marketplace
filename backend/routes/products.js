@@ -18,6 +18,25 @@ router.get("/", async (req, res) => {
 });
 
 // ---------------------------------------
+// GET products by artisan
+// ---------------------------------------
+router.get("/by-artisan/:artisanId", async (req, res) => {
+  console.log("Fetching products for artisan:", req.params.artisanId);
+  try {
+    const db = await connectMongo();
+    const products = await db
+      .collection("products")
+      .find({ artisanId: req.params.artisanId })
+      .toArray();
+
+    res.json(products);
+  } catch (err) {
+    console.error("Error in /api/products/by-artisan/:artisanId", err);
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+});
+
+// ---------------------------------------
 // GET product by ID
 // ---------------------------------------
 router.get("/:id", async (req, res) => {

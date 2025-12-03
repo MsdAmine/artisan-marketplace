@@ -431,16 +431,6 @@ export default function Catalog() {
             {/* Loading More */}
             {filteredProducts.length > 0 && (
               <div className="mt-12 text-center">
-                <Button
-                  variant="outline"
-                  className="rounded-apple"
-                  onClick={() => {
-                    // In a real app, this would load more products
-                    console.log("Load more products");
-                  }}
-                >
-                  Charger plus de produits
-                </Button>
               </div>
             )}
           </div>

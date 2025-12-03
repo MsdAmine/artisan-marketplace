@@ -3,8 +3,9 @@ const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 
+
 // ---------------------------------------
-// GET all artisan products
+// GET all artisan products (could be removed later if unused)
 // ---------------------------------------
 router.get("/", async (req, res) => {
   try {
@@ -13,6 +14,25 @@ router.get("/", async (req, res) => {
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------------------------------
+// GET products for a specific artisan
+// ---------------------------------------
+router.get("/products/:artisanId", async (req, res) => {
+  try {
+    const db = await connectMongo();
+
+    const products = await db
+      .collection("products")
+      .find({ artisanId: req.params.artisanId })
+      .toArray();
+
+    res.json(products);
+  } catch (err) {
+    console.error("Error in /api/artisans/products/:artisanId", err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 });
 
@@ -30,9 +50,9 @@ router.post("/", async (req, res) => {
       stock: Number(req.body.stock),
       category: req.body.category,
       artisanId: req.body.artisanId,
-      image: req.body.image || "",     // <-- Cloudinary URL from frontend
+      image: req.body.image || "", // <-- Cloudinary URL from frontend
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     const result = await db.collection("products").insertOne(product);
@@ -59,7 +79,7 @@ router.put("/:id", async (req, res) => {
       stock: Number(req.body.stock),
       category: req.body.category,
       artisanId: req.body.artisanId,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     // If image was replaced → frontend sends a new Cloudinary URL
@@ -67,10 +87,9 @@ router.put("/:id", async (req, res) => {
       updateData.image = req.body.image;
     }
 
-    const updated = await db.collection("products").updateOne(
-      { _id: new ObjectId(req.params.id) },
-      { $set: updateData }
-    );
+    const updated = await db
+      .collection("products")
+      .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
 
     res.json({ updated: updated.modifiedCount });
   } catch (err) {
@@ -87,7 +106,7 @@ router.delete("/:id", async (req, res) => {
     const db = await connectMongo();
 
     const result = await db.collection("products").deleteOne({
-      _id: new ObjectId(req.params.id)
+      _id: new ObjectId(req.params.id),
     });
 
     res.json({ deleted: result.deletedCount });

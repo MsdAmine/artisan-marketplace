@@ -3,7 +3,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config({ path: ".env" });
-const neo4j = require("neo4j-driver"); // <-- Added neo4j-driver dependency
+const neo4j = require("neo4j-driver");
 
 const { connectMongo } = require("./db/mongo");
 
@@ -18,11 +18,11 @@ const productsRoute = require("./routes/products");
 const artisanRoute = require("./routes/artisan"); 
 const cartRoute = require("./routes/cart");
 const ordersRoute = require("./routes/orders");
-const statsRoute = require("./routes/stats");
+const statsRoutes = require("./routes/stats");
 const authRoute = require("./routes/auth");
 const recommendationRoutes = require("./routes/recommendations");
 
-// --- NEO4J INITIALIZATION LOGIC ---
+
 let neo4jDriver; 
 
 function initNeo4jDriver() {
@@ -31,7 +31,6 @@ function initNeo4jDriver() {
         neo4j.auth.basic(process.env.NEO4J_USERNAME, process.env.NEO4J_PASSWORD)
     );
 
-    // Optional check to confirm connection on startup
     driver.getServerInfo()
         .then(() => console.log("Neo4j driver ready!"))
         .catch((err) => console.error("Neo4j connection error:", err));
@@ -39,7 +38,6 @@ function initNeo4jDriver() {
     return driver;
 }
 
-// Attach driver to every request before hitting the router
 app.use((req, res, next) => {
     req.neo4jDriver = neo4jDriver;
     next();
@@ -47,14 +45,12 @@ app.use((req, res, next) => {
 
 app.use("/api/recommendations", recommendationRoutes);
 
-
-
 app.use("/api/upload", uploadRoutes);
 app.use("/api/products", productsRoute);
 app.use("/api/artisans", artisanRoute); 
 app.use("/api/cart", cartRoute);
 app.use("/api/orders", ordersRoute);
-app.use("/api/stats", statsRoute);
+app.use("/api/stats", statsRoutes);
 app.use("/api/auth", authRoute);
 
 

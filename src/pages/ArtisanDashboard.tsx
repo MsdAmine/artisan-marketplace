@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { 
-  AlertCircle, 
-  Package, 
-  TrendingUp, 
-  ShoppingCart, 
-  Edit, 
-  Trash2, 
+import {
+  AlertCircle,
+  Package,
+  TrendingUp,
+  ShoppingCart,
+  Edit,
+  Trash2,
   Plus,
   Eye,
   RefreshCw,
@@ -16,54 +16,93 @@ import {
   ChevronDown,
   Filter,
   BarChart3,
-  Download
+  Download,
 } from "lucide-react";
 import AddProductModal from "@/components/ui/AddProductModal";
 import EditProductModal from "@/components/ui/EditProductModal";
 import DeleteConfirmModal from "@/components/ui/DeleteConfirmModal";
+import { useAuth } from "@/context/AuthContext";
 
 export default function ArtisanDashboard() {
   const [products, setProducts] = useState([]);
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState<any[]>([]);
   const [openAdd, setOpenAdd] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
   const [activeTab, setActiveTab] = useState("all");
-  const [sortConfig, setSortConfig] = useState({ key: "name", direction: "asc" });
+  const [sortConfig, setSortConfig] = useState({
+    key: "name",
+    direction: "asc",
+  });
   const [loading, setLoading] = useState(false);
 
   const lowStockProducts = products.filter((p) => p.stock < 5);
   const outOfStockProducts = products.filter((p) => p.stock === 0);
+  const { user } = useAuth();
 
   async function loadProducts() {
+    if (!user) return;
+
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3000/api/artisans");
+      const res = await fetch(
+        `http://localhost:3000/api/artisans/products/${user.id}`
+      );
       const data = await res.json();
-      setProducts(data);
+
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data.products)
+        ? data.products
+        : [];
+
+      setProducts(list);
     } catch (error) {
       console.error("Failed to load products:", error);
+      setProducts([]); // avoid filter crash
     } finally {
       setLoading(false);
     }
   }
 
   async function loadStats() {
+    if (!user) return;
+
     try {
-      const res = await fetch("http://localhost:3000/api/stats/sales-by-artisan");
+      const res = await fetch(
+        "http://localhost:3000/api/stats/sales-by-artisan"
+      );
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to load stats:", res.status, text);
+        setStats([]);
+        return;
+      }
+
       const data = await res.json();
-      setStats(data);
-    } catch (error) {
-      console.error("Failed to load stats:", error);
+
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray((data as any).stats)
+        ? (data as any).stats
+        : [];
+
+      setStats(list);
+    } catch (err) {
+      console.error("Failed to load stats:", err);
+      setStats([]);
     }
   }
 
   useEffect(() => {
-    loadProducts();
-    loadStats();
-  }, []);
+    if (user) {
+      loadProducts();
+      loadStats();
+    }
+  }, [user]);
 
-  const artisanData = stats.find((s) => s._id === "demo-artisan");
+  const artisanData = stats.find((s) => s._id === user?.id);
 
   // Filter products based on active tab
   const filteredProducts = products.filter((product) => {
@@ -77,19 +116,19 @@ export default function ArtisanDashboard() {
   // Sort products
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (!sortConfig.key) return 0;
-    
+
     if (sortConfig.key === "name") {
-      return sortConfig.direction === "asc" 
+      return sortConfig.direction === "asc"
         ? a.name.localeCompare(b.name)
         : b.name.localeCompare(a.name);
     }
     if (sortConfig.key === "price") {
-      return sortConfig.direction === "asc" 
+      return sortConfig.direction === "asc"
         ? a.price - b.price
         : b.price - a.price;
     }
     if (sortConfig.key === "stock") {
-      return sortConfig.direction === "asc" 
+      return sortConfig.direction === "asc"
         ? a.stock - b.stock
         : b.stock - a.stock;
     }
@@ -97,17 +136,20 @@ export default function ArtisanDashboard() {
   });
 
   const handleSort = (key) => {
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc"
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
   };
 
   const SortIcon = ({ columnKey }) => {
-    if (sortConfig.key !== columnKey) return <ChevronUp className="h-3 w-3 opacity-0" />;
-    return sortConfig.direction === "asc" 
-      ? <ChevronUp className="h-3 w-3" />
-      : <ChevronDown className="h-3 w-3" />;
+    if (sortConfig.key !== columnKey)
+      return <ChevronUp className="h-3 w-3 opacity-0" />;
+    return sortConfig.direction === "asc" ? (
+      <ChevronUp className="h-3 w-3" />
+    ) : (
+      <ChevronDown className="h-3 w-3" />
+    );
   };
 
   return (
@@ -134,7 +176,9 @@ export default function ArtisanDashboard() {
               className="gap-2"
               disabled={loading}
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-4 w-4 ${loading ? "animate-spin" : ""}`}
+              />
               Actualiser
             </Button>
             <Button
@@ -159,19 +203,24 @@ export default function ArtisanDashboard() {
                 <p className="text-sm text-amber-700">
                   {outOfStockProducts.length > 0 && (
                     <span className="font-semibold">
-                      {outOfStockProducts.length} produit{outOfStockProducts.length > 1 ? 's' : ''} épuisé{outOfStockProducts.length > 1 ? 's' : ''}
+                      {outOfStockProducts.length} produit
+                      {outOfStockProducts.length > 1 ? "s" : ""} épuisé
+                      {outOfStockProducts.length > 1 ? "s" : ""}
                     </span>
                   )}
-                  {outOfStockProducts.length > 0 && lowStockProducts.length > 0 && " • "}
+                  {outOfStockProducts.length > 0 &&
+                    lowStockProducts.length > 0 &&
+                    " • "}
                   {lowStockProducts.length > 0 && (
                     <span className="font-semibold">
-                      {lowStockProducts.length} produit{lowStockProducts.length > 1 ? 's' : ''} en stock faible
+                      {lowStockProducts.length} produit
+                      {lowStockProducts.length > 1 ? "s" : ""} en stock faible
                     </span>
                   )}
                 </p>
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 className="border-amber-300 text-amber-700 hover:bg-amber-50"
                 onClick={() => setActiveTab("lowStock")}
@@ -187,22 +236,33 @@ export default function ArtisanDashboard() {
           <StatCard
             title="Ventes totales"
             value={`${(artisanData?.totalSales || 0).toLocaleString()} MAD`}
-            change="+12.5%"
+            change={
+              artisanData
+                ? `${artisanData.salesChangePercent.toFixed(1)}%`
+                : undefined
+            }
             icon={<TrendingUp className="h-5 w-5" />}
             color="primary"
           />
+
           <StatCard
             title="Commandes"
             value={artisanData?.totalOrders || 0}
-            change="+8.2%"
+            change={
+              artisanData
+                ? `${artisanData.ordersChangePercent.toFixed(1)}%`
+                : undefined
+            }
             icon={<ShoppingCart className="h-5 w-5" />}
             color="secondary"
           />
+
           <StatCard
             title="Produits actifs"
             value={products.length}
             icon={<Package className="h-5 w-5" />}
           />
+
           <StatCard
             title="Stock faible"
             value={lowStockProducts.length}
@@ -227,15 +287,15 @@ export default function ArtisanDashboard() {
                       {sortedProducts.length}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex items-center gap-2">
                     {/* Simple Tab Navigation */}
                     <div className="inline-flex bg-muted p-1 rounded-lg">
                       <button
                         onClick={() => setActiveTab("all")}
                         className={`px-3 py-1.5 text-sm rounded-apple transition-colors ${
-                          activeTab === "all" 
-                            ? "bg-background shadow-xs" 
+                          activeTab === "all"
+                            ? "bg-background shadow-xs"
                             : "hover:bg-muted/50"
                         }`}
                       >
@@ -244,8 +304,8 @@ export default function ArtisanDashboard() {
                       <button
                         onClick={() => setActiveTab("inStock")}
                         className={`px-3 py-1.5 text-sm rounded-apple transition-colors ${
-                          activeTab === "inStock" 
-                            ? "bg-background shadow-xs" 
+                          activeTab === "inStock"
+                            ? "bg-background shadow-xs"
                             : "hover:bg-muted/50"
                         }`}
                       >
@@ -254,8 +314,8 @@ export default function ArtisanDashboard() {
                       <button
                         onClick={() => setActiveTab("lowStock")}
                         className={`px-3 py-1.5 text-sm rounded-apple transition-colors flex items-center gap-1 ${
-                          activeTab === "lowStock" 
-                            ? "bg-background shadow-xs" 
+                          activeTab === "lowStock"
+                            ? "bg-background shadow-xs"
                             : "hover:bg-muted/50"
                         }`}
                       >
@@ -263,10 +323,10 @@ export default function ArtisanDashboard() {
                         Faible
                       </button>
                     </div>
-                    
-                    <Button 
-                      variant="outline" 
-                      size="icon" 
+
+                    <Button
+                      variant="outline"
+                      size="icon"
                       className="h-9 w-9 rounded-apple"
                       title="Filtrer les produits"
                     >
@@ -275,7 +335,7 @@ export default function ArtisanDashboard() {
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="p-0">
                 {loading ? (
                   <div className="flex items-center justify-center py-16">
@@ -287,7 +347,7 @@ export default function ArtisanDashboard() {
                       <table className="w-full">
                         <thead>
                           <tr className="bg-muted/30 border-b border-border">
-                            <th 
+                            <th
                               className="py-3 px-6 text-left font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors"
                               onClick={() => handleSort("name")}
                             >
@@ -296,7 +356,7 @@ export default function ArtisanDashboard() {
                                 <SortIcon columnKey="name" />
                               </div>
                             </th>
-                            <th 
+                            <th
                               className="py-3 px-6 text-left font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors"
                               onClick={() => handleSort("price")}
                             >
@@ -305,7 +365,7 @@ export default function ArtisanDashboard() {
                                 <SortIcon columnKey="price" />
                               </div>
                             </th>
-                            <th 
+                            <th
                               className="py-3 px-6 text-left font-medium text-muted-foreground cursor-pointer hover:bg-muted/50 transition-colors"
                               onClick={() => handleSort("stock")}
                             >
@@ -322,15 +382,15 @@ export default function ArtisanDashboard() {
                             </th>
                           </tr>
                         </thead>
-                        
+
                         <tbody>
                           {sortedProducts.map((p) => {
                             const lowStock = p.stock < 5;
                             const outOfStock = p.stock === 0;
 
                             return (
-                              <tr 
-                                key={p._id} 
+                              <tr
+                                key={p._id}
                                 className="border-b border-border hover:bg-muted/20 transition-colors group"
                               >
                                 <td className="py-4 px-6">
@@ -346,30 +406,42 @@ export default function ArtisanDashboard() {
                                     </div>
                                   </div>
                                 </td>
-                                
+
                                 <td className="py-4 px-6">
-                                  <span className="font-semibold">{p.price} MAD</span>
+                                  <span className="font-semibold">
+                                    {p.price} MAD
+                                  </span>
                                 </td>
-                                
+
                                 <td className="py-4 px-6">
                                   <div className="flex items-center gap-3">
                                     <div className="w-20 bg-muted rounded-full h-2">
-                                      <div 
+                                      <div
                                         className={`h-2 rounded-full ${
-                                          outOfStock ? "bg-red-500" : 
-                                          lowStock ? "bg-amber-500" : 
-                                          "bg-emerald-500"
+                                          outOfStock
+                                            ? "bg-red-500"
+                                            : lowStock
+                                            ? "bg-amber-500"
+                                            : "bg-emerald-500"
                                         }`}
-                                        style={{ width: `${Math.min(p.stock, 20) * 5}%` }}
+                                        style={{
+                                          width: `${
+                                            Math.min(p.stock, 20) * 5
+                                          }%`,
+                                        }}
                                       ></div>
                                     </div>
-                                    
+
                                     <div className="flex flex-col min-w-[80px]">
-                                      <span className={`font-medium ${
-                                        outOfStock ? "text-red-600" : 
-                                        lowStock ? "text-amber-600" : 
-                                        "text-emerald-600"
-                                      }`}>
+                                      <span
+                                        className={`font-medium ${
+                                          outOfStock
+                                            ? "text-red-600"
+                                            : lowStock
+                                            ? "text-amber-600"
+                                            : "text-emerald-600"
+                                        }`}
+                                      >
                                         {p.stock} unités
                                       </span>
                                       {outOfStock ? (
@@ -388,13 +460,16 @@ export default function ArtisanDashboard() {
                                     </div>
                                   </div>
                                 </td>
-                                
+
                                 <td className="py-4 px-6">
-                                  <Badge variant="outline" className="rounded-full px-3">
+                                  <Badge
+                                    variant="outline"
+                                    className="rounded-full px-3"
+                                  >
                                     {p.category || "Non catégorisé"}
                                   </Badge>
                                 </td>
-                                
+
                                 <td className="py-4 px-6">
                                   <div className="flex items-center gap-2">
                                     <Button
@@ -406,7 +481,7 @@ export default function ArtisanDashboard() {
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
-                                    
+
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -416,7 +491,7 @@ export default function ArtisanDashboard() {
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
-                                    
+
                                     <Button
                                       size="sm"
                                       variant="ghost"
@@ -433,22 +508,22 @@ export default function ArtisanDashboard() {
                         </tbody>
                       </table>
                     </div>
-                    
+
                     {sortedProducts.length === 0 && (
                       <div className="text-center py-16">
                         <Package className="h-12 w-12 text-muted-foreground/50 mx-auto mb-4" />
                         <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                          {activeTab === "all" 
-                            ? "Aucun produit enregistré" 
+                          {activeTab === "all"
+                            ? "Aucun produit enregistré"
                             : "Aucun produit correspond à ce filtre"}
                         </h3>
                         <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                          {activeTab === "all" 
-                            ? "Commencez par ajouter votre premier produit à votre catalogue" 
+                          {activeTab === "all"
+                            ? "Commencez par ajouter votre premier produit à votre catalogue"
                             : "Essayez de modifier vos filtres pour voir plus de résultats"}
                         </p>
                         {activeTab === "all" && (
-                          <Button 
+                          <Button
                             onClick={() => setOpenAdd(true)}
                             className="gap-2 rounded-apple"
                           >
@@ -463,7 +538,7 @@ export default function ArtisanDashboard() {
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Sidebar */}
           <div className="space-y-6">
             {/* Stock Status */}
@@ -481,10 +556,10 @@ export default function ArtisanDashboard() {
                     <span>Stock bon</span>
                   </div>
                   <Badge variant="outline" className="bg-white">
-                    {products.filter(p => p.stock >= 5).length}
+                    {products.filter((p) => p.stock >= 5).length}
                   </Badge>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 rounded-apple bg-amber-50 hover:bg-amber-100/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="h-3 w-3 rounded-full bg-amber-500"></div>
@@ -494,7 +569,7 @@ export default function ArtisanDashboard() {
                     {lowStockProducts.length}
                   </Badge>
                 </div>
-                
+
                 <div className="flex items-center justify-between p-3 rounded-apple bg-red-50 hover:bg-red-100/50 transition-colors">
                   <div className="flex items-center gap-3">
                     <div className="h-3 w-3 rounded-full bg-red-500"></div>
@@ -506,8 +581,7 @@ export default function ArtisanDashboard() {
                 </div>
               </CardContent>
             </Card>
-           
-            
+
             {/* Performance Summary */}
             <Card className="rounded-apple border border-border bg-muted/30">
               <CardHeader>
@@ -518,31 +592,44 @@ export default function ArtisanDashboard() {
               <CardContent className="space-y-4">
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Produit le plus vendu</span>
+                    <span className="text-muted-foreground">
+                      Produit le plus vendu
+                    </span>
                     <span className="font-medium">Tapis berbère</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: '85%' }}></div>
+                    <div
+                      className="bg-primary h-2 rounded-full"
+                      style={{ width: "85%" }}
+                    ></div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Moyenne des prix</span>
+                    <span className="text-muted-foreground">
+                      Moyenne des prix
+                    </span>
                     <span className="font-medium">245 MAD</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
-                    <div className="bg-secondary h-2 rounded-full" style={{ width: '60%' }}></div>
+                    <div
+                      className="bg-secondary h-2 rounded-full"
+                      style={{ width: "60%" }}
+                    ></div>
                   </div>
                 </div>
-                
+
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Valeur totale</span>
                     <span className="font-medium">12,450 MAD</span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
-                    <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '75%' }}></div>
+                    <div
+                      className="bg-emerald-500 h-2 rounded-full"
+                      style={{ width: "75%" }}
+                    ></div>
                   </div>
                 </div>
               </CardContent>
@@ -556,6 +643,8 @@ export default function ArtisanDashboard() {
         open={openAdd}
         onClose={() => setOpenAdd(false)}
         onCreated={loadProducts}
+        artisanId={user?.id}
+        apiBaseUrl="http://localhost:3000"
       />
 
       <EditProductModal
@@ -578,7 +667,14 @@ export default function ArtisanDashboard() {
 /* ---------------------- */
 /*   Apple Style StatCard */
 /* ---------------------- */
-function StatCard({ title, value, change, icon, color = "default", alert = false }: any) {
+function StatCard({
+  title,
+  value,
+  change,
+  icon,
+  color = "default",
+  alert = false,
+}: any) {
   const colorClasses = {
     default: "border-border",
     primary: "border-primary/20",
@@ -592,26 +688,36 @@ function StatCard({ title, value, change, icon, color = "default", alert = false
   };
 
   return (
-    <Card className={`rounded-apple border shadow-xs ${colorClasses[color]} transition-all hover:shadow-sm`}>
+    <Card
+      className={`rounded-apple border shadow-xs ${colorClasses[color]} transition-all hover:shadow-sm`}
+    >
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <div className={`p-2 rounded-apple ${bgClasses[color]} border ${colorClasses[color]}`}>
+          <div
+            className={`p-2 rounded-apple ${bgClasses[color]} border ${colorClasses[color]}`}
+          >
             {icon}
           </div>
           {alert && (
             <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
           )}
         </div>
-        <p className="text-sm text-muted-foreground font-medium mb-1">{title}</p>
+        <p className="text-sm text-muted-foreground font-medium mb-1">
+          {title}
+        </p>
         <p className="text-2xl font-semibold mb-2">{value}</p>
         {change && (
           <div className="flex items-center">
-            <span className={`text-xs font-medium ${
-              change.startsWith('+') ? 'text-emerald-600' : 'text-red-600'
-            }`}>
+            <span
+              className={`text-xs font-medium ${
+                change.startsWith("+") ? "text-emerald-600" : "text-red-600"
+              }`}
+            >
               {change}
             </span>
-            <span className="text-muted-foreground text-xs ml-2">vs mois dernier</span>
+            <span className="text-muted-foreground text-xs ml-2">
+              vs mois dernier
+            </span>
           </div>
         )}
       </CardContent>

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
 import {
   Upload,
   X,
@@ -24,31 +24,47 @@ import {
   Loader2,
 } from "lucide-react";
 
+type AddProductModalProps = {
+  open: boolean;
+  onClose: () => void;
+  onCreated: () => void;
+  artisanId?: string; // provided by parent from auth context
+  apiBaseUrl?: string; // optional, falls back to VITE_API_URL
+  categories?: string[];
+};
+
+type FormState = {
+  name: string;
+  description: string;
+  price: string;
+  stock: string;
+  category: string;
+};
+
 export default function AddProductModal({
   open,
   onClose,
   onCreated,
-}: {
-  open: boolean;
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const [form, setForm] = useState({
+  artisanId,
+  apiBaseUrl,
+  categories,
+}: AddProductModalProps) {
+  const [form, setForm] = useState<FormState>({
     name: "",
     description: "",
     price: "",
     stock: "",
     category: "",
-    artisanId: "demo-artisan",
   });
 
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [activeStep, setActiveStep] = useState(1);
+  const [activeStep, setActiveStep] = useState<1 | 2>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const categories = [
+  // categories can be injected, but we keep a sensible default
+  const categoryOptions = categories ?? [
     "Textile",
     "Poterie",
     "Bijoux",
@@ -59,9 +75,18 @@ export default function AddProductModal({
     "Autre",
   ];
 
-  function updateField(field: string, value: any) {
-    setForm({ ...form, [field]: value });
-    // Clear error for this field when user starts typing
+  // Resolve API base url from props or env
+  const baseUrl = apiBaseUrl ?? "";
+
+  useEffect(() => {
+    // reset validation errors when the modal is reopened
+    if (open) {
+      setErrors({});
+    }
+  }, [open]);
+
+  function updateField(field: keyof FormState, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
@@ -69,26 +94,27 @@ export default function AddProductModal({
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.size > 5 * 1024 * 1024) {
-        // 5MB limit
-        setErrors((prev) => ({
-          ...prev,
-          image: "L'image doit faire moins de 5MB",
-        }));
-        return;
-      }
-      if (!selectedFile.type.startsWith("image/")) {
-        setErrors((prev) => ({
-          ...prev,
-          image: "Veuillez sélectionner une image",
-        }));
-        return;
-      }
-      setFile(selectedFile);
-      setImagePreview(URL.createObjectURL(selectedFile));
-      setErrors((prev) => ({ ...prev, image: "" }));
+    if (!selectedFile) return;
+
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({
+        ...prev,
+        image: "L'image doit faire moins de 5MB",
+      }));
+      return;
     }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      setErrors((prev) => ({
+        ...prev,
+        image: "Veuillez sélectionner une image",
+      }));
+      return;
+    }
+
+    setFile(selectedFile);
+    setImagePreview(URL.createObjectURL(selectedFile));
+    setErrors((prev) => ({ ...prev, image: "" }));
   }
 
   function validateForm() {
@@ -97,39 +123,56 @@ export default function AddProductModal({
     if (!form.name.trim()) newErrors.name = "Le nom est requis";
     if (!form.description.trim())
       newErrors.description = "La description est requise";
-    if (!form.price || Number(form.price) <= 0)
+
+    const priceNumber = Number(form.price);
+    if (!form.price || isNaN(priceNumber) || priceNumber <= 0) {
       newErrors.price = "Prix invalide";
-    if (!form.stock || Number(form.stock) < 0)
+    }
+
+    const stockNumber = Number(form.stock);
+    if (!form.stock || isNaN(stockNumber) || stockNumber < 0) {
       newErrors.stock = "Stock invalide";
+    }
+
     if (!form.category.trim()) newErrors.category = "La catégorie est requise";
+
     if (!file) newErrors.image = "Une image est requise";
+
+    if (!artisanId) {
+      newErrors.artisanId =
+        "Identifiant artisan manquant. Veuillez vous reconnecter.";
+    }
+
+    if (!baseUrl) {
+      newErrors.api =
+        "Configuration API manquante. Définissez VITE_API_URL ou apiBaseUrl.";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }
 
   async function createProduct() {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
       setLoading(true);
+
       let imageUrl = "";
 
-      // -----------------------------------------
-      // 1. Upload image to Cloudinary
-      // -----------------------------------------
-      if (file) {
+      // 1 - upload image if present
+      if (file && baseUrl) {
         const imgForm = new FormData();
         imgForm.append("image", file);
 
-        const uploadRes = await fetch("http://localhost:3000/api/upload", {
+        const uploadRes = await fetch(`${baseUrl}/api/upload`, {
           method: "POST",
           body: imgForm,
         });
 
         if (!uploadRes.ok) {
+          const text = await uploadRes.text();
+          console.error("Upload error:", text);
           setErrors((prev) => ({
             ...prev,
             submit: "Erreur lors de l'upload de l'image.",
@@ -142,23 +185,31 @@ export default function AddProductModal({
         imageUrl = uploadData.url;
       }
 
-      // -----------------------------------------
-      // 2. Build product JSON body (MISSING)
-      // -----------------------------------------
+      if (!artisanId || !baseUrl) {
+        setLoading(false);
+        return;
+      }
+
+      // 2 - build product body
       const productBody = {
-        ...form,
-        image: imageUrl,
+        name: form.name.trim(),
+        description: form.description.trim(),
         price: Number(form.price),
         stock: Number(form.stock),
+        category: form.category,
+        artisanId,
+        image: imageUrl,
       };
 
-      const res = await fetch("http://localhost:3000/api/artisans", {
+      const res = await fetch(`${baseUrl}/api/artisans`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productBody),
       });
 
       if (!res.ok) {
+        const text = await res.text();
+        console.error("Create product error:", text);
         setErrors((prev) => ({
           ...prev,
           submit: "Erreur lors de la création du produit.",
@@ -167,22 +218,20 @@ export default function AddProductModal({
         return;
       }
 
-      const result = await res.json(); // ✅ REQUIRED
+      await res.json();
 
-      // Success
       onCreated();
-      onClose();
       resetForm();
-      setLoading(false);
+      onClose();
     } catch (error) {
-      console.error(error);
+      console.error("Unexpected create product error:", error);
       setErrors((prev) => ({
         ...prev,
         submit: "Erreur inattendue. Veuillez réessayer.",
       }));
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   function resetForm() {
@@ -192,7 +241,6 @@ export default function AddProductModal({
       price: "",
       stock: "",
       category: "",
-      artisanId: "demo-artisan",
     });
     setFile(null);
     setImagePreview(null);
@@ -256,6 +304,14 @@ export default function AddProductModal({
     </Card>
   );
 
+  const hasMissingRequired =
+    !form.name ||
+    !form.description ||
+    !form.price ||
+    !form.stock ||
+    !form.category ||
+    !file;
+
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl rounded-apple max-h-[90vh] md:max-h-[85vh] overflow-y-auto my-4 md:my-8">
@@ -269,7 +325,7 @@ export default function AddProductModal({
           </DialogDescription>
         </DialogHeader>
 
-        {/* Progress Steps */}
+        {/* Steps */}
         <div className="flex items-center justify-between mb-8">
           <div
             className={`flex items-center gap-2 ${
@@ -308,7 +364,7 @@ export default function AddProductModal({
 
         {activeStep === 1 ? (
           <div className="space-y-6">
-            {/* Basic Information */}
+            {/* Basic info */}
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label
@@ -401,7 +457,7 @@ export default function AddProductModal({
                   }`}
                 >
                   <option value="">Sélectionnez une catégorie</option>
-                  {categories.map((cat) => (
+                  {categoryOptions.map((cat) => (
                     <option key={cat} value={cat}>
                       {cat}
                     </option>
@@ -437,7 +493,7 @@ export default function AddProductModal({
               )}
             </div>
 
-            {/* Image Upload */}
+            {/* Image upload */}
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm font-medium">
                 <ImageIcon className="h-4 w-4" />
@@ -501,6 +557,7 @@ export default function AddProductModal({
                   </label>
                 </div>
               )}
+
               {errors.image && (
                 <p className="text-sm text-red-500 flex items-center gap-1">
                   <AlertCircle className="h-3 w-3" />
@@ -511,7 +568,7 @@ export default function AddProductModal({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Preview Section */}
+            {/* Preview */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg">
                 Vérifiez les informations
@@ -522,13 +579,7 @@ export default function AddProductModal({
               <ProductSummary />
             </div>
 
-            {/* Warning if any fields are empty */}
-            {(!form.name ||
-              !form.description ||
-              !form.price ||
-              !form.stock ||
-              !form.category ||
-              !file) && (
+            {hasMissingRequired && (
               <div className="bg-amber-50 border border-amber-200 rounded-apple p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
@@ -547,12 +598,29 @@ export default function AddProductModal({
           </div>
         )}
 
-        {/* Submit Error */}
         {errors.submit && (
           <div className="bg-red-50 border border-red-200 rounded-apple p-4">
             <div className="flex items-start gap-3">
               <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
               <p className="text-sm text-red-700">{errors.submit}</p>
+            </div>
+          </div>
+        )}
+
+        {errors.artisanId && (
+          <div className="bg-red-50 border border-red-200 rounded-apple p-4 mt-2">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <p className="text-sm text-red-700">{errors.artisanId}</p>
+            </div>
+          </div>
+        )}
+
+        {errors.api && (
+          <div className="bg-red-50 border border-red-200 rounded-apple p-4 mt-2">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+              <p className="text-sm text-red-700">{errors.api}</p>
             </div>
           </div>
         )}
@@ -589,15 +657,7 @@ export default function AddProductModal({
                 </Button>
                 <Button
                   onClick={createProduct}
-                  disabled={
-                    loading ||
-                    !form.name ||
-                    !form.description ||
-                    !form.price ||
-                    !form.stock ||
-                    !form.category ||
-                    !file
-                  }
+                  disabled={loading || hasMissingRequired}
                   className="gap-2 rounded-apple"
                 >
                   {loading ? (
