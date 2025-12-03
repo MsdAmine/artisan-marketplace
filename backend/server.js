@@ -5,6 +5,7 @@ require("dotenv").config();
 const { connectMongo } = require("./db/mongo");
 
 const app = express();
+const authRoute = require("./routes/auth");
 
 app.use(cors());
 app.use(express.json());
@@ -24,14 +25,15 @@ app.use("/api/artisans", artisanRoute); // ✔️ correct
 app.use("/api/cart", cartRoute);
 app.use("/api/orders", ordersRoute);
 app.use("/api/stats", statsRoute);
+app.use("/api/auth", authRoute);
 
 async function startServer() {
-  await connectMongo();
-  console.log("DB connected");
+  await connectMongo();
+  console.log("DB connected");
 
-  app.listen(3000, () => {
-    console.log("Backend running at http://localhost:3000");
-  });
+  app.listen(3000, () => {
+    console.log("Backend running at http://localhost:3000");
+  });
 }
 
 startServer();

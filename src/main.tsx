@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
-
+import { AuthProvider } from "./context/AuthContext";
 import { BrowserRouter } from "react-router-dom";
 import { ToastProvider } from "@/components/ui/use-toast";
 
@@ -10,7 +10,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <ToastProvider>
-        <App />
+        <AuthProvider>
+          <App />
+        </AuthProvider>
       </ToastProvider>
     </BrowserRouter>
   </React.StrictMode>
