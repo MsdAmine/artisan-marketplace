@@ -156,10 +156,6 @@ export default function Cart() {
       </div>
     );
 
-  /* --------------------------- */
-  /*           Cart UI           */
-  /* --------------------------- */
-
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-6xl mx-auto px-8 py-12">
