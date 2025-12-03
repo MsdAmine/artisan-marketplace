@@ -143,7 +143,7 @@ export default function AddProductModal({
       }
 
       // -----------------------------------------
-      // 2. Send product (JSON) to backend
+      // 2. Build product JSON body (MISSING)
       // -----------------------------------------
       const productBody = {
         ...form,
@@ -167,10 +167,13 @@ export default function AddProductModal({
         return;
       }
 
+      const result = await res.json(); // ✅ REQUIRED
+
       // Success
       onCreated();
       onClose();
       resetForm();
+      setLoading(false);
     } catch (error) {
       console.error(error);
       setErrors((prev) => ({

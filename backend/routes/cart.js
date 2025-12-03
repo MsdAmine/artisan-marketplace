@@ -1,160 +1,79 @@
 const express = require("express");
 const router = express.Router();
-const { connectMongo } = require("../db/mongo");
 const redis = require("../db/redis");
+const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 
-// Create order from cart
-router.post("/", async (req, res) => {
-  try {
-    const db = await connectMongo();
-
-    const cart = await redis.get("cart:demo-user");
-    const cartData = JSON.parse(cart || "{}");
-
-    if (!cartData.items || cartData.items.length === 0) {
-      return res.status(400).json({ error: "Panier vide" });
-    }
-
-    const newOrder = {
-      orderNumber: "ORD-" + Date.now(),
-      items: cartData.items.map(i => ({
-        productName: i.productName,
-        productId: i.productId,
-        quantity: i.quantity,
-        subtotal: i.subtotal,
-        image: i.image
-      })),
-      totalAmount: cartData.totalAmount,
-      
-      // Add user identifier
-      userId: "demo-user", // In real app, this would come from auth
-      
-      // ⭐ DEFAULT STATUS
-      status: "processing",
-
-      // ⭐ Payment (replace later if needed)
-      paymentMethod: "cash_on_delivery",
-
-      // ⭐ Delivery info (placeholder for now)
-      deliveryAddress: {
-        name: "Client",
-        street: "Adresse inconnue",
-        city: "Ville inconnue",
-        phone: "",
-        email: ""
-      },
-
-      createdAt: new Date(),
-      estimatedDelivery: null,
-      deliveredAt: null
-    };
-
-    const result = await db.collection("orders").insertOne(newOrder);
-
-    // Empty the cart
-    await redis.del("cart:demo-user");
-
-    res.json({ success: true, orderId: result.insertedId });
-
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET all orders (for admin)
+// GET cart
 router.get("/", async (req, res) => {
-  try {
-    const db = await connectMongo();
-    const orders = await db.collection("orders").find().toArray();
-
-    console.log("Fetched orders:", orders);
-    res.json(orders);
-  } catch (err) {
-    console.error("❌ Orders API error:", err);
-    res.status(500).json({ error: err.message });
-  }
+  const cart = await redis.get("cart:demo-user");
+  res.json(JSON.parse(cart || '{"items":[],"totalAmount":0}'));
 });
 
-// GET orders for specific user (Add this route!)
-router.get("/user/:userId", async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const db = await connectMongo();
-    
-    console.log(`Fetching orders for user: ${userId}`);
-    
-    const orders = await db.collection("orders")
-      .find({ userId: userId })
-      .sort({ createdAt: -1 }) // Newest first
-      .toArray();
+// ADD item
+router.post("/items", async (req, res) => {
+  const { productId, quantity } = req.body;
+  if (!productId) return res.status(400).json({ error: "productId missing" });
 
-    console.log(`Found ${orders.length} orders for user ${userId}`);
-    res.json(orders);
-  } catch (err) {
-    console.error("❌ User orders API error:", err);
-    res.status(500).json({ error: err.message });
+  let cart = JSON.parse(await redis.get("cart:demo-user") || '{"items":[],"totalAmount":0}');
+
+  const db = await connectMongo();
+  const product = await db.collection("products").findOne({ _id: new ObjectId(productId) });
+
+  if (!product) return res.status(404).json({ error: "Produit introuvable" });
+
+  let existing = cart.items.find(i => i.productId === productId);
+
+  if (existing) {
+    existing.quantity += quantity;
+    existing.subtotal = existing.quantity * existing.unitPrice;
+  } else {
+    cart.items.push({
+      productId,
+      productName: product.name,
+      unitPrice: product.price,
+      quantity,
+      subtotal: product.price * quantity,
+      image: product.image
+    });
   }
+
+  cart.totalAmount = cart.items.reduce((sum, i) => sum + i.subtotal, 0);
+
+  await redis.set("cart:demo-user", JSON.stringify(cart));
+  res.json(cart);
 });
 
-// GET single order by ID
-router.get("/:orderId", async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const db = await connectMongo();
-    
-    let query;
-    if (ObjectId.isValid(orderId)) {
-      query = { _id: new ObjectId(orderId) };
-    } else {
-      query = { orderNumber: orderId };
-    }
-    
-    const order = await db.collection("orders").findOne(query);
-    
-    if (!order) {
-      return res.status(404).json({ error: "Commande non trouvée" });
-    }
-    
-    res.json(order);
-  } catch (err) {
-    console.error("❌ Single order API error:", err);
-    res.status(500).json({ error: err.message });
-  }
+// UPDATE quantity
+router.put("/items/:productId", async (req, res) => {
+  const { productId } = req.params;
+  const { quantity } = req.body;
+
+  let cart = JSON.parse(await redis.get("cart:demo-user") || '{"items":[],"totalAmount":0}');
+  
+  const item = cart.items.find(i => i.productId === productId);
+  if (!item) return res.status(404).json({ error: "Item not found" });
+
+  item.quantity = quantity;
+  item.subtotal = quantity * item.unitPrice;
+
+  cart.totalAmount = cart.items.reduce((sum, i) => sum + i.subtotal, 0);
+
+  await redis.set("cart:demo-user", JSON.stringify(cart));
+  res.json(cart);
 });
 
-// Update order status
-router.patch("/:orderId", async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    const { status } = req.body;
-    
-    if (!status) {
-      return res.status(400).json({ error: "Status requis" });
-    }
-    
-    const db = await connectMongo();
-    
-    const updateData = { status };
-    if (status === "delivered") {
-      updateData.deliveredAt = new Date();
-    }
-    
-    const result = await db.collection("orders").updateOne(
-      { _id: new ObjectId(orderId) },
-      { $set: updateData }
-    );
-    
-    if (result.matchedCount === 0) {
-      return res.status(404).json({ error: "Commande non trouvée" });
-    }
-    
-    res.json({ success: true, updated: result.modifiedCount });
-  } catch (err) {
-    console.error("❌ Update order error:", err);
-    res.status(500).json({ error: err.message });
-  }
+// DELETE item
+router.delete("/items/:productId", async (req, res) => {
+  const { productId } = req.params;
+
+  let cart = JSON.parse(await redis.get("cart:demo-user") || '{"items":[],"totalAmount":0}');
+
+  cart.items = cart.items.filter(i => i.productId !== productId);
+  cart.totalAmount = cart.items.reduce((sum, i) => sum + i.subtotal, 0);
+
+  await redis.set("cart:demo-user", JSON.stringify(cart));
+  res.json(cart);
 });
 
 module.exports = router;

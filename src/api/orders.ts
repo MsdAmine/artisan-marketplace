@@ -2,21 +2,11 @@
 const API_URL = "http://localhost:3000/api";
 
 export async function getOrders() {
-  try {
-    // For now, use demo-user. In real app, get userId from auth
-    const userId = "demo-user";
-    const response = await fetch(`${API_URL}/orders/user/${userId}`);
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching orders:", error);
-    throw error;
-  }
+  const res = await fetch("http://localhost:3000/api/orders");
+  if (!res.ok) throw new Error("HTTP error! status: " + res.status);
+  return res.json();
 }
+
 
 export async function createOrder() {
   try {

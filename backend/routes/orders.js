@@ -26,13 +26,10 @@ router.post("/", async (req, res) => {
       })),
       totalAmount: cartData.totalAmount,
 
-      // ⭐ DEFAULT STATUS
       status: "processing",
 
-      // ⭐ Payment (replace later if needed)
       paymentMethod: "cash_on_delivery",
 
-      // ⭐ Delivery info (placeholder for now)
       deliveryAddress: {
         name: "Client",
         street: "Adresse inconnue",
