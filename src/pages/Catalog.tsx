@@ -276,19 +276,7 @@ export default function Catalog() {
             {/* Controls Bar */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-4">
-                <Tabs defaultValue="all" className="w-auto">
-                  <TabsList className="bg-muted">
-                    <TabsTrigger value="all" className="rounded-apple">
-                      Tous les produits
-                    </TabsTrigger>
-                    <TabsTrigger value="featured" className="rounded-apple">
-                      En vedette
-                    </TabsTrigger>
-                    <TabsTrigger value="new" className="rounded-apple">
-                      Nouveautés
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
+                
 
                 <div className="text-sm text-muted-foreground">
                   {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''} trouvé{filteredProducts.length !== 1 ? 's' : ''}
