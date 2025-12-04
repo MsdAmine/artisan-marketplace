@@ -24,8 +24,14 @@ import DeleteConfirmModal from "@/components/ui/DeleteConfirmModal";
 import { useAuth } from "@/context/AuthContext";
 
 export default function ArtisanDashboard() {
+  type ArtisanStats = {
+    totalSales: number;
+    totalOrders: number;
+    productCount: number;
+    salesChangePercent?: number;
+  };
   const [products, setProducts] = useState([]);
-  const [stats, setStats] = useState<any[]>([]);
+  const [stats, setStats] = useState<ArtisanStats | null>(null);
   const [openAdd, setOpenAdd] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
@@ -69,29 +75,26 @@ export default function ArtisanDashboard() {
     if (!user) return;
 
     try {
-      const res = await fetch(
-        "http://localhost:3000/api/stats/sales-by-artisan"
-      );
+      const res = await fetch("http://localhost:3000/api/stats/artisan", {
+        headers: {
+          Authorization: `Bearer ${
+            localStorage.getItem("auth")
+              ? JSON.parse(localStorage.getItem("auth")).token
+              : ""
+          }`,
+        },
+      });
 
       if (!res.ok) {
-        const text = await res.text();
-        console.error("Failed to load stats:", res.status, text);
-        setStats([]);
+        setStats(null);
         return;
       }
 
       const data = await res.json();
-
-      const list = Array.isArray(data)
-        ? data
-        : Array.isArray((data as any).stats)
-        ? (data as any).stats
-        : [];
-
-      setStats(list);
+      setStats(data); // save object directly
     } catch (err) {
       console.error("Failed to load stats:", err);
-      setStats([]);
+      setStats(null);
     }
   }
 
@@ -102,8 +105,12 @@ export default function ArtisanDashboard() {
     }
   }, [user]);
 
-  const artisanData = stats.find((s) => s._id === user?.id);
-
+  const artisanData: ArtisanStats = stats || {
+    totalSales: 0,
+    totalOrders: 0,
+    productCount: 0,
+    salesChangePercent: 0,
+  };
   // Filter products based on active tab
   const filteredProducts = products.filter((product) => {
     if (activeTab === "all") return true;
@@ -235,9 +242,9 @@ export default function ArtisanDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
           <StatCard
             title="Ventes totales"
-            value={`${(artisanData?.totalSales || 0).toLocaleString()} MAD`}
+            value={`${artisanData.totalSales.toLocaleString()} MAD`}
             change={
-              artisanData
+              artisanData.salesChangePercent !== undefined
                 ? `${artisanData.salesChangePercent.toFixed(1)}%`
                 : undefined
             }
@@ -247,12 +254,8 @@ export default function ArtisanDashboard() {
 
           <StatCard
             title="Commandes"
-            value={artisanData?.totalOrders || 0}
-            change={
-              artisanData
-                ? `${artisanData.ordersChangePercent.toFixed(1)}%`
-                : undefined
-            }
+            value={artisanData.totalOrders || 0}
+            change={undefined} // no orders change percent from backend
             icon={<ShoppingCart className="h-5 w-5" />}
             color="secondary"
           />

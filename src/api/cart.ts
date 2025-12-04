@@ -1,39 +1,53 @@
-const BASE = "http://localhost:3000/api/cart";
+import { API_BASE } from "./client";
 
-export async function addToCart(productId: string) {
-  const res = await fetch(`${BASE}/items`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ productId, quantity: 1 }),
+function authHeaders() {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
+  };
+}
+
+export async function getCart() {
+  const res = await fetch(`${API_BASE}/cart`, {
+    headers: authHeaders(),
   });
-
-  if (!res.ok) throw new Error("Erreur d'ajout au panier");
+  if (!res.ok) throw new Error("Failed to fetch cart");
   return res.json();
 }
 
-export async function updateQuantity(productId: string, quantity: number) {
-  const res = await fetch(`${BASE}/items/${productId}`, {
+export async function addToCart(productId: string, quantity: number) {
+  const res = await fetch(`${API_BASE}/cart/items`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ productId, quantity }),
+  });
+  if (!res.ok) throw new Error("Failed to add to cart");
+  return res.json();
+}
+
+export async function updateCartItem(productId: string, quantity: number) {
+  const res = await fetch(`${API_BASE}/cart/items/${productId}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders(),
     body: JSON.stringify({ quantity }),
   });
+  if (!res.ok) throw new Error("Failed to update cart");
+  return res.json();
+}
 
-  if (!res.ok) throw new Error("Erreur de mise à jour");
+export async function deleteCartItem(productId: string) {
+  const res = await fetch(`${API_BASE}/cart/items/${productId}`, {
+    method: "DELETE",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error("Failed to delete cart item");
   return res.json();
 }
 
 export async function removeItem(productId: string) {
-  const res = await fetch(`${BASE}/items/${productId}`, {
-    method: "DELETE",
-  });
-
-  if (!res.ok) throw new Error("Erreur de suppression");
-  return res.json();
+  return deleteCartItem(productId);
 }
 
-export async function getCart() {
-  const res = await fetch(BASE);
-
-  if (!res.ok) throw new Error("Erreur de récupération du panier");
-  return res.json();
+export async function updateQuantity(productId: string, quantity: number) {
+  return updateCartItem(productId, quantity);
 }

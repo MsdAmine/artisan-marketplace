@@ -36,10 +36,9 @@ export default function ProductModal({ open, onClose, product }: any) {
   async function handleAdd() {
     try {
       setLoading(true);
-      // Add product with quantity
-      for (let i = 0; i < quantity; i++) {
-        await addToCart(product._id);
-      }
+
+      await addToCart(product._id, quantity);
+
       setAdded(true);
       setTimeout(() => {
         setAdded(false);
@@ -49,6 +48,7 @@ export default function ProductModal({ open, onClose, product }: any) {
       console.error(err);
       alert("Erreur d'ajout au panier");
     }
+
     setLoading(false);
   }
 
@@ -251,8 +251,6 @@ export default function ProductModal({ open, onClose, product }: any) {
                   </>
                 )}
               </Button>
-
-            
             </div>
 
             {/* Additional Info */}

@@ -1,4 +1,6 @@
-const API_BASE = "http://localhost:3000/api";
+export const API_BASE = "http://localhost:3000/api";
+
+export default API_BASE;
 
 export async function apiGet(path) {
   const res = await fetch(`${API_BASE}${path}`);
@@ -7,7 +9,7 @@ export async function apiGet(path) {
 }
 
 export async function apiPost(path, body) {
-  const res = await fetch(`${API_BASE}${path}`,{
+  const res = await fetch(`${API_BASE}${path}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

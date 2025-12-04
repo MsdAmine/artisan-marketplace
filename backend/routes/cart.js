@@ -4,9 +4,15 @@ const redis = require("../db/redis");
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 
+// All routes require login
+const auth = require("../middleware/auth");
+router.use(auth);
+
 // GET cart
 router.get("/", async (req, res) => {
-  const cart = await redis.get("cart:demo-user");
+  const cartKey = `cart:${req.user.id}`;
+
+  const cart = await redis.get(cartKey);
   res.json(JSON.parse(cart || '{"items":[],"totalAmount":0}'));
 });
 
@@ -15,14 +21,19 @@ router.post("/items", async (req, res) => {
   const { productId, quantity } = req.body;
   if (!productId) return res.status(400).json({ error: "productId missing" });
 
-  let cart = JSON.parse(await redis.get("cart:demo-user") || '{"items":[],"totalAmount":0}');
+  const cartKey = `cart:${req.user.id}`;
+  let cart = JSON.parse(
+    (await redis.get(cartKey)) || '{"items":[],"totalAmount":0}'
+  );
 
   const db = await connectMongo();
-  const product = await db.collection("products").findOne({ _id: new ObjectId(productId) });
+  const product = await db
+    .collection("products")
+    .findOne({ _id: new ObjectId(productId) });
 
   if (!product) return res.status(404).json({ error: "Produit introuvable" });
 
-  let existing = cart.items.find(i => i.productId === productId);
+  let existing = cart.items.find((i) => i.productId === productId);
 
   if (existing) {
     existing.quantity += quantity;
@@ -34,24 +45,27 @@ router.post("/items", async (req, res) => {
       unitPrice: product.price,
       quantity,
       subtotal: product.price * quantity,
-      image: product.image
+      image: product.image,
     });
   }
 
   cart.totalAmount = cart.items.reduce((sum, i) => sum + i.subtotal, 0);
 
-  await redis.set("cart:demo-user", JSON.stringify(cart));
+  await redis.set(cartKey, JSON.stringify(cart));
   res.json(cart);
 });
 
 // UPDATE quantity
 router.put("/items/:productId", async (req, res) => {
+  const cartKey = `cart:${req.user.id}`;
   const { productId } = req.params;
   const { quantity } = req.body;
 
-  let cart = JSON.parse(await redis.get("cart:demo-user") || '{"items":[],"totalAmount":0}');
-  
-  const item = cart.items.find(i => i.productId === productId);
+  let cart = JSON.parse(
+    (await redis.get(cartKey)) || '{"items":[],"totalAmount":0}'
+  );
+
+  const item = cart.items.find((i) => i.productId === productId);
   if (!item) return res.status(404).json({ error: "Item not found" });
 
   item.quantity = quantity;
@@ -59,20 +73,23 @@ router.put("/items/:productId", async (req, res) => {
 
   cart.totalAmount = cart.items.reduce((sum, i) => sum + i.subtotal, 0);
 
-  await redis.set("cart:demo-user", JSON.stringify(cart));
+  await redis.set(cartKey, JSON.stringify(cart));
   res.json(cart);
 });
 
 // DELETE item
 router.delete("/items/:productId", async (req, res) => {
+  const cartKey = `cart:${req.user.id}`;
   const { productId } = req.params;
 
-  let cart = JSON.parse(await redis.get("cart:demo-user") || '{"items":[],"totalAmount":0}');
+  let cart = JSON.parse(
+    (await redis.get(cartKey)) || '{"items":[],"totalAmount":0}'
+  );
 
-  cart.items = cart.items.filter(i => i.productId !== productId);
+  cart.items = cart.items.filter((i) => i.productId !== productId);
   cart.totalAmount = cart.items.reduce((sum, i) => sum + i.subtotal, 0);
 
-  await redis.set("cart:demo-user", JSON.stringify(cart));
+  await redis.set(cartKey, JSON.stringify(cart));
   res.json(cart);
 });
 
