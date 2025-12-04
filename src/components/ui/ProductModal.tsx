@@ -8,36 +8,63 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { addToCart } from "@/api/cart";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ShoppingCart,
   Package,
   Tag,
   Star,
   CheckCircle,
-  Truck,
   Shield,
-  ChevronRight,
-  Heart,
-  Share2,
   AlertCircle,
   Loader2,
   Minus,
   Plus,
 } from "lucide-react";
 
+import { useAuth } from "@/context/AuthContext";
+import { trackInteraction } from "@/api/recommendations";
+
 export default function ProductModal({ open, onClose, product }: any) {
   const [loading, setLoading] = useState(false);
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
+  const { user } = useAuth();
 
+  // If no product, do not render the modal
   if (!product) return null;
+
+  /* ---------- Track product view in Neo4j ---------- */
+  useEffect(() => {
+    if (!open || !user || !product?._id) return;
+
+    // Fire and forget, do not block UI
+    trackInteraction({
+      userId: user.id,
+      productId: product._id,
+      action: "view",
+    }).catch((err) => {
+      console.error("Failed to track view interaction", err);
+    });
+  }, [open, user, product?._id]);
 
   async function handleAdd() {
     try {
       setLoading(true);
 
+      // Add to cart in your backend
       await addToCart(product._id, quantity);
+
+      // Track add_to_cart interaction in Neo4j
+      if (user) {
+        trackInteraction({
+          userId: user.id,
+          productId: product._id,
+          action: "add_to_cart",
+        }).catch((err) => {
+          console.error("Failed to track add_to_cart interaction", err);
+        });
+      }
 
       setAdded(true);
       setTimeout(() => {
@@ -47,9 +74,9 @@ export default function ProductModal({ open, onClose, product }: any) {
     } catch (err) {
       console.error(err);
       alert("Erreur d'ajout au panier");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   function handleIncrement() {

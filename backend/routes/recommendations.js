@@ -1,15 +1,13 @@
 const express = require("express");
 const router = express.Router();
 
-
-
 // ✔ Test route
 router.get("/test", (req, res) => {
-    // We can now safely check if the driver was passed correctly
-    if (!req.neo4jDriver) {
-        return res.status(500).send("Neo4j Driver not initialized in server.js");
-    }
-    res.send("Neo4j recommendation route working!");
+  // We can now safely check if the driver was passed correctly
+  if (!req.neo4jDriver) {
+    return res.status(500).send("Neo4j Driver not initialized in server.js");
+  }
+  res.send("Neo4j recommendation route working!");
 });
 
 // ✔ Track user actions
@@ -20,9 +18,10 @@ router.post("/track", async (req, res) => {
     return res.status(400).json({ message: "Missing data" });
   }
 
-    // FIX: Retrieve the authenticated driver from the request object
-    const driver = req.neo4jDriver;
-    if (!driver) return res.status(500).json({ message: "Neo4j connection not ready" });
+  // FIX: Retrieve the authenticated driver from the request object
+  const driver = req.neo4jDriver;
+  if (!driver)
+    return res.status(500).json({ message: "Neo4j connection not ready" });
 
   const session = driver.session({ database: process.env.NEO4J_DATABASE }); // Use the database name from env
 
@@ -47,42 +46,33 @@ router.post("/track", async (req, res) => {
   }
 });
 
-// ✔ Get recommendations
+
 router.get("/:userId", async (req, res) => {
   const { userId } = req.params;
 
-    // FIX: Retrieve the authenticated driver from the request object
-    const driver = req.neo4jDriver;
-    if (!driver) return res.status(500).json({ message: "Neo4j connection not ready" });
-
-  const session = driver.session({ database: process.env.NEO4J_DATABASE }); // Use the database name from env
-
   try {
-    const result = await session.run(
-      `
+    const session = driver.session();
+
+    const query = `
       MATCH (u:User {id: $userId})-[:VIEWED]->(p:Product)
       MATCH (other:User)-[:VIEWED]->(p)
-      MATCH (other)-[r:VIEWED]->(rec:Product)
-      WHERE u.id <> other.id
-      RETURN rec.id AS id, COUNT(r) AS score
-      ORDER BY score DESC
+      MATCH (other)-[:VIEWED]->(rec:Product)
+      WHERE rec.id <> p.id
+      RETURN DISTINCT rec
       LIMIT 10
-      `
-      ,
-      { userId }
-    );
+    `;
 
-    const products = result.records.map((row) => ({
-      id: row.get("id"),
-      score: row.get("score"),
-    }));
+    const result = await session.run(query, { userId });
+
+    const products = result.records.map((record) => {
+      const node = record.get("rec");
+      return node.properties;
+    });
 
     res.json({ products });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to fetch recommendations" });
-  } finally {
-    await session.close();
+  } catch (error) {
+    console.error("Recommendation error:", error);
+    res.status(500).json({ error: "Recommendation failed" });
   }
 });
 
