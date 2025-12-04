@@ -3,6 +3,11 @@ const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 
+// ===============================================
+// PRODUCT CRUD & FETCHING
+// (Mounted at /api/products)
+// ===============================================
+
 // ---------------------------------------
 // GET all products
 // ---------------------------------------
@@ -18,7 +23,7 @@ router.get("/", async (req, res) => {
 });
 
 // ---------------------------------------
-// GET products by artisan
+// GET products by artisan (READ)
 // ---------------------------------------
 router.get("/by-artisan/:artisanId", async (req, res) => {
   console.log("Fetching products for artisan:", req.params.artisanId);
@@ -37,7 +42,7 @@ router.get("/by-artisan/:artisanId", async (req, res) => {
 });
 
 // ---------------------------------------
-// GET product by ID
+// GET product by ID (READ)
 // ---------------------------------------
 router.get("/:id", async (req, res) => {
   try {
@@ -59,6 +64,84 @@ router.get("/:id", async (req, res) => {
   } catch (err) {
     console.error("GET PRODUCT BY ID ERROR", err);
     res.status(500).json({ error: "Failed to fetch product" });
+  }
+});
+
+// ---------------------------------------
+// CREATE product (POST)
+// ---------------------------------------
+router.post("/", async (req, res) => {
+  try {
+    const db = await connectMongo();
+
+    const product = {
+      name: req.body.name,
+      description: req.body.description,
+      price: Number(req.body.price),
+      stock: Number(req.body.stock),
+      category: req.body.category,
+      artisanId: req.body.artisanId,
+      image: req.body.image || "",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const result = await db.collection("products").insertOne(product);
+
+    res.json({ insertedId: result.insertedId, product });
+  } catch (err) {
+    console.error("CREATE PRODUCT ERROR", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------------------------------
+// UPDATE product (PUT)
+// ---------------------------------------
+router.put("/:id", async (req, res) => {
+  try {
+    const db = await connectMongo();
+
+    const updateData = {
+      name: req.body.name,
+      description: req.body.description,
+      price: Number(req.body.price),
+      stock: Number(req.body.stock),
+      category: req.body.category,
+      artisanId: req.body.artisanId,
+      updatedAt: new Date(),
+    };
+
+    if (req.body.image) {
+      updateData.image = req.body.image;
+    }
+
+    const updated = await db
+      .collection("products")
+      .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
+
+    res.json({ updated: updated.modifiedCount });
+  } catch (err) {
+    console.error("UPDATE PRODUCT ERROR", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------------------------------
+// DELETE product (DELETE)
+// ---------------------------------------
+router.delete("/:id", async (req, res) => {
+  try {
+    const db = await connectMongo();
+
+    const result = await db.collection("products").deleteOne({
+      _id: new ObjectId(req.params.id),
+    });
+
+    res.json({ deleted: result.deletedCount });
+  } catch (err) {
+    console.error("DELETE PRODUCT ERROR", err);
+    res.status(500).json({ error: err.message });
   }
 });
 

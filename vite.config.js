@@ -1,6 +1,9 @@
+// vite.config.js
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+// ALTERNATIVE FIX: Use require for the built-in Node.js path module
+const path = require("path");
 
 export default defineConfig({
   plugins: [react()],

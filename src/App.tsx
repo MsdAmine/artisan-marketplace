@@ -7,8 +7,9 @@ import Stats from "./pages/Stats";
 import { Toaster } from "./components/ui/toaster";
 import MyOrders from "./pages/MyOrders";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import Login from "@/pages/auth/login";
+import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
+import ArtisanProfile from "@/pages/ArtisanProfile";
 
 export default function App() {
   const location = useLocation();
@@ -30,6 +31,8 @@ export default function App() {
           {/* Public routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          <Route path="/artisan/:id" element={<ArtisanProfile />} />
 
           {/* Protected routes */}
           <Route
