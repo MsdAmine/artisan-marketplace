@@ -1,17 +1,16 @@
 const neo4j = require("neo4j-driver");
 
-// We accept 'driver' as the first argument to match the logic in recommendations.js
+/* ---------------------------------------------------------
+   TRACK INTERACTION (Products analytics)
+--------------------------------------------------------- */
 async function trackInteraction(driver, userId, productId, action = "view") {
-  // 1. Safety Check: Ensure driver is valid
   if (!driver || typeof driver.session !== "function") {
-    throw new TypeError("Neo4j driver instance is missing or invalid in trackInteraction.");
+    throw new TypeError("Invalid Neo4j driver instance in trackInteraction()");
   }
 
-  // 2. Open a Session
   const session = driver.session({ defaultAccessMode: neo4j.session.WRITE });
 
   try {
-    
     await session.run(
       `
       MERGE (u:User {id: $userId})
@@ -20,11 +19,7 @@ async function trackInteraction(driver, userId, productId, action = "view") {
       ON CREATE SET r.count = 1, r.lastViewed = timestamp(), r.action = $action
       ON MATCH SET r.count = r.count + 1, r.lastViewed = timestamp(), r.action = $action
       `,
-      {
-        userId,
-        productId,
-        action,
-      }
+      { userId, productId, action }
     );
 
     console.log(`User ${userId} ${action} product ${productId}`);
@@ -36,30 +31,38 @@ async function trackInteraction(driver, userId, productId, action = "view") {
   }
 }
 
+/* ---------------------------------------------------------
+   FOLLOW ARTISAN
+--------------------------------------------------------- */
 async function followArtisan(driver, userId, artisanId) {
-  if (!driver) throw new Error("Driver not provided");
-  
-  const session = driver.session();
+  if (!driver) throw new Error("Driver not provided to followArtisan()");
+
+  const session = driver.session({ defaultAccessMode: neo4j.session.WRITE });
+
   try {
     await session.run(
       `
       MERGE (u:User {id: $userId})
-      MERGE (a:User {id: $artisanId}) -- Assuming Artisans are also Users nodes
-      MERGE (u)-[r:FOLLOWS]->(a)
-      RETURN r
+      MERGE (a:User {id: $artisanId})  
+      MERGE (u)-[:FOLLOWS]->(a)
       `,
       { userId, artisanId }
     );
-    console.log(`User ${userId} followed Artisan ${artisanId}`);
+
+    console.log(`User ${userId} followed artisan ${artisanId}`);
   } finally {
     await session.close();
   }
 }
 
+/* ---------------------------------------------------------
+   UNFOLLOW ARTISAN
+--------------------------------------------------------- */
 async function unfollowArtisan(driver, userId, artisanId) {
-  if (!driver) throw new Error("Driver not provided");
-  
-  const session = driver.session();
+  if (!driver) throw new Error("Driver not provided to unfollowArtisan()");
+
+  const session = driver.session({ defaultAccessMode: neo4j.session.WRITE });
+
   try {
     await session.run(
       `
@@ -68,37 +71,64 @@ async function unfollowArtisan(driver, userId, artisanId) {
       `,
       { userId, artisanId }
     );
+
+    console.log(`User ${userId} unfollowed artisan ${artisanId}`);
   } finally {
     await session.close();
   }
 }
 
+/* ---------------------------------------------------------
+   GET ARTISAN FOLLOW STATS
+--------------------------------------------------------- */
 async function getArtisanStats(driver, artisanId, currentUserId) {
-  const session = driver.session();
+  if (!driver) throw new Error("Neo4j driver missing in getArtisanStats()");
+
+  const session = driver.session({ defaultAccessMode: neo4j.session.READ });
+
   try {
     const result = await session.run(
       `
+      // Count all followers of the artisan
       MATCH (a:User {id: $artisanId})
-      OPTIONAL MATCH (u:User)-[r:FOLLOWS]->(a)
-      WITH a, count(r) as followers
-      
-      -- Check if current user is following
-      OPTIONAL MATCH (me:User {id: $currentUserId})-[isFollowing:FOLLOWS]->(a)
-      
-      RETURN followers, count(isFollowing) > 0 as isFollowing
+      OPTIONAL MATCH (u:User)-[:FOLLOWS]->(a)
+      WITH a, count(u) AS followers
+
+      // Check if current user follows the artisan
+      OPTIONAL MATCH (me:User {id: $currentUserId})-[f:FOLLOWS]->(a)
+      RETURN followers, f IS NOT NULL AS isFollowing
       `,
-      { artisanId, currentUserId: currentUserId || "" }
+      {
+        artisanId,
+        currentUserId: currentUserId ?? null,
+      }
     );
-    
+
+    if (result.records.length === 0) {
+      return { followers: 0, isFollowing: false };
+    }
+
     const record = result.records[0];
+
     return {
-      followers: record.get("followers").toNumber(),
-      isFollowing: record.get("isFollowing")
+      followers:
+        typeof record.get("followers").toNumber === "function"
+          ? record.get("followers").toNumber()
+          : record.get("followers"),
+
+      isFollowing: record.get("isFollowing") || false,
     };
+  } catch (err) {
+    console.error("Neo4j error in getArtisanStats:", err);
+    return { followers: 0, isFollowing: false };
   } finally {
     await session.close();
   }
 }
 
-// 4. Export the function
-module.exports = { trackInteraction, followArtisan, unfollowArtisan, getArtisanStats };
+module.exports = {
+  trackInteraction,
+  followArtisan,
+  unfollowArtisan,
+  getArtisanStats,
+};

@@ -3,108 +3,166 @@ const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 
-const { followArtisan, unfollowArtisan, getArtisanStats } = require("../neo4j/actions"); 
+const {
+  followArtisan,
+  unfollowArtisan,
+  getArtisanStats,
+} = require("../neo4j/actions");
 
-// --- UTILITY TO GET USER ID FOR STATS CHECK ---
+// -------------------------------
+// Utility: Safely Get current user ID
+// -------------------------------
 function getCurrentUserId(req) {
-    // Looks for user ID in query (for profile view) or body (for follow action)
-    // NOTE: In a secure app, the user ID should come from a middleware (e.g., JWT)
-    return req.query.userId || req.body.userId || null;
+  try {
+    // SAFELY read params → no more undefined errors
+    return req.query?.userId || req.body?.userId || null;
+  } catch (e) {
+    return null;
+  }
 }
 
-// ===============================================
-// ARTISAN PROFILE AND FOLLOW ROUTES
-// (Mounted at /api/artisans)
-// ===============================================
-
-// ---------------------------------------
-// GET Artisan Profile Data (Main Profile View)
-// ---------------------------------------
+// =======================================================
+// GET Artisan Profile → /api/artisans/:artisanId/profile
+// =======================================================
 router.get("/:artisanId/profile", async (req, res) => {
-    try {
-        const artisanId = req.params.artisanId;
-        const currentUserId = getCurrentUserId(req);
+  try {
+    const artisanId = req.params.artisanId;
+    const currentUserId = getCurrentUserId(req);
 
-        const db = await connectMongo();
-
-        // 1. Get Basic Info from MongoDB (User collection)
-        // Ensure artisanId is converted to ObjectId if necessary for your 'users' collection lookup
-        const artisan = await db
-            .collection("users")
-            .findOne({ _id: new ObjectId(artisanId) }, { projection: { password: 0 } });
-        
-        if (!artisan) {
-            return res.status(404).json({ error: "Artisan not found" });
-        }
-
-        // 2. Get Products from MongoDB (Products collection)
-        // Find products where artisanId is stored as a string
-        const products = await db
-            .collection("products")
-            .find({ artisanId: artisanId }) 
-            .toArray();
-
-        // 3. Get Stats from Neo4j (Followers & Following status)
-        const driver = req.app.locals.neo4jDriver; // Assuming driver is attached to app.locals
-        let stats = { followers: 0, isFollowing: false };
-
-        if (driver) {
-           // Pass the IDs to Neo4j actions
-           stats = await getArtisanStats(driver, artisanId, currentUserId);
-        }
-
-        res.json({
-            artisan,
-            products,
-            stats
-        });
-
-    } catch (err) {
-        console.error("Error fetching artisan profile:", err);
-        res.status(500).json({ error: "Server error fetching profile", details: err.message });
+    if (!ObjectId.isValid(artisanId)) {
+      return res.status(400).json({ error: "Invalid artisan ID" });
     }
+
+    const db = await connectMongo();
+
+    // 1️⃣ Fetch artisan info
+    const artisan = await db
+      .collection("users")
+      .findOne(
+        { _id: new ObjectId(artisanId) },
+        { projection: { password: 0 } }
+      );
+
+    if (!artisan) {
+      return res.status(404).json({ error: "Artisan not found" });
+    }
+
+    // 2️⃣ Fetch artisan products
+    const products = await db
+      .collection("products")
+      .find({ artisanId: artisanId }) // artisanId stored as STRING
+      .toArray();
+
+    // 3️⃣ Fetch Neo4j stats
+    const driver = req.neo4jDriver;
+    let stats = { followers: 0, isFollowing: false };
+
+    if (driver) {
+      stats = await getArtisanStats(driver, artisanId, currentUserId);
+    }
+
+    // 4️⃣ Respond with profile
+    res.json({ artisan, products, stats });
+  } catch (err) {
+    console.error("Error fetching artisan profile:", err);
+    res.status(500).json({
+      error: "Server error fetching profile",
+      details: err.message,
+    });
+  }
 });
 
-// ---------------------------------------
-// POST Follow Artisan
-// ---------------------------------------
+// =======================================================
+// POST Follow Artisan → /api/artisans/:artisanId/follow
+// =======================================================
 router.post("/:artisanId/follow", async (req, res) => {
-    const userId = getCurrentUserId(req); // The user who is following
+  try {
+    const userId = getCurrentUserId(req);
     const artisanId = req.params.artisanId;
-    const driver = req.app.locals.neo4jDriver;
+    const driver = req.neo4jDriver;
 
-    if (!driver || !userId) {
-        return res.status(400).json({ error: "Missing driver or user ID" });
-    }
+    if (!driver) return res.status(500).json({ error: "Neo4j driver missing" });
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-    try {
-        await followArtisan(driver, userId, artisanId);
-        res.json({ success: true, action: "followed" });
-    } catch (err) {
-        console.error("Failed to follow artisan:", err);
-        res.status(500).json({ error: "Failed to follow artisan" });
+    if (userId === artisanId) {
+      return res.status(400).json({ error: "You cannot follow yourself" });
     }
+    await followArtisan(driver, userId, artisanId);
+
+    res.json({ success: true, action: "followed" });
+  } catch (err) {
+    console.error("Failed to follow artisan:", err);
+    res.status(500).json({ error: "Failed to follow artisan" });
+  }
 });
 
-// ---------------------------------------
-// POST Unfollow Artisan
-// ---------------------------------------
+// =========================================================
+// POST Unfollow Artisan → /api/artisans/:artisanId/unfollow
+// =========================================================
 router.post("/:artisanId/unfollow", async (req, res) => {
-    const userId = getCurrentUserId(req); // The user who is unfollowing
+  try {
+    const userId = getCurrentUserId(req);
     const artisanId = req.params.artisanId;
-    const driver = req.app.locals.neo4jDriver;
+    const driver = req.neo4jDriver;
 
-    if (!driver || !userId) {
-        return res.status(400).json({ error: "Missing driver or user ID" });
+    if (!driver) return res.status(500).json({ error: "Neo4j driver missing" });
+    if (!userId) return res.status(400).json({ error: "Missing userId" });
+
+    if (userId === artisanId) {
+      return res.status(400).json({ error: "You cannot unfollow yourself" });
+    }
+    await unfollowArtisan(driver, userId, artisanId);
+
+    res.json({ success: true, action: "unfollowed" });
+  } catch (err) {
+    console.error("Failed to unfollow artisan:", err);
+    res.status(500).json({ error: "Failed to unfollow artisan" });
+  }
+});
+
+router.put("/:artisanId", async (req, res) => {
+  try {
+    const { artisanId } = req.params;
+    const updates = req.body;
+
+    const db = await connectMongo();
+    await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(artisanId) }, { $set: updates });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Profile update failed:", err);
+    res.status(500).json({ error: "Update failed" });
+  }
+});
+
+router.patch("/:artisanId", async (req, res) => {
+  try {
+    const artisanId = req.params.artisanId;
+    const userId = getCurrentUserId(req);
+
+    if (!userId || userId !== artisanId) {
+      return res.status(403).json({ error: "Not allowed" });
     }
 
-    try {
-        await unfollowArtisan(driver, userId, artisanId);
-        res.json({ success: true, action: "unfollowed" });
-    } catch (err) {
-        console.error("Failed to unfollow artisan:", err);
-        res.status(500).json({ error: "Failed to unfollow artisan" });
-    }
+    const db = await connectMongo();
+
+    const fields = {
+      name: req.body.name,
+      avatar: req.body.avatar,
+      bio: req.body.bio,
+      location: req.body.location,
+    };
+
+    await db
+      .collection("users")
+      .updateOne({ _id: new ObjectId(artisanId) }, { $set: fields });
+
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update profile" });
+  }
 });
 
 module.exports = router;

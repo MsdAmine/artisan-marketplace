@@ -33,7 +33,7 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
 
           <Route path="/artisan/:id" element={<ArtisanProfile />} />
-
+          
           {/* Protected routes */}
           <Route
             path="/"
