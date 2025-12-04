@@ -33,6 +33,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    async function loadUser() {
+      const savedToken = localStorage.getItem("token");
+      if (!savedToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:3000/api/users/me", {
+          headers: {
+            "x-user-id": JSON.parse(localStorage.getItem("auth")!)?.user.id,
+          },
+        });
+
+        const data = await res.json();
+
+        if (res.ok) {
+          setUser({
+            id: data.id,
+            email: data.email,
+            role: data.role,
+          });
+          setToken(savedToken);
+        }
+      } catch (err) {
+        console.error("Auth load error:", err);
+      }
+
+      setLoading(false);
+    }
+
+    loadUser();
+  }, []);
+
   // 👉 Re-add these two functions:
   function login(token: string, user: User) {
     setUser(user);

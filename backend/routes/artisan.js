@@ -120,20 +120,67 @@ router.post("/:artisanId/unfollow", async (req, res) => {
   }
 });
 
-router.put("/:artisanId", async (req, res) => {
+// ===============================================
+// UPDATE ARTISAN PROFILE  →  PUT /api/artisans/:id
+// ===============================================
+router.put("/:id", async (req, res) => {
   try {
-    const { artisanId } = req.params;
-    const updates = req.body;
+    const artisanId = req.params.id;
+    const userId = req.user?.id || req.body.userId; // fallback for non-token setups
+
+    if (!userId) {
+      return res.status(401).json({ error: "Unauthorized: userId missing" });
+    }
+
+    if (userId !== artisanId) {
+      return res
+        .status(403)
+        .json({ error: "You cannot edit another user's profile" });
+    }
+
+    if (!ObjectId.isValid(artisanId)) {
+      return res.status(400).json({ error: "Invalid user/artisan ID" });
+    }
 
     const db = await connectMongo();
-    await db
-      .collection("users")
-      .updateOne({ _id: new ObjectId(artisanId) }, { $set: updates });
 
-    res.json({ success: true });
+    // Allowed fields
+    const allowed = [
+      "name",
+      "bio",
+      "location",
+      "avatar",
+      "email",
+      "phone",
+      "website",
+    ];
+    const updateData = {};
+
+    allowed.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updateData[field] = req.body[field];
+      }
+    });
+
+    const result = await db
+      .collection("users")
+      .findOneAndUpdate(
+        { _id: new ObjectId(artisanId) },
+        { $set: updateData },
+        { returnDocument: "after", projection: { password: 0 } }
+      );
+
+    res.json({
+      success: true,
+      message: "Profile updated successfully",
+      artisan: result,
+    });
   } catch (err) {
-    console.error("Profile update failed:", err);
-    res.status(500).json({ error: "Update failed" });
+    console.error("Error updating profile:", err);
+    res.status(500).json({
+      error: "Server error updating profile",
+      details: err.message,
+    });
   }
 });
 
