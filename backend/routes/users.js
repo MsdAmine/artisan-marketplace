@@ -2,21 +2,30 @@ const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
+const auth = require("../middleware/auth");
+
+// All user routes require authentication
+router.use(auth);
+
+function getUserId(req) {
+  return req.user?.id || req.headers["x-user-id"];
+}
 
 // GET /api/users/me  → return logged in user info
 router.get("/me", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"]; // TEMP AUTH
+    const userId = getUserId(req);
 
     if (!userId) {
-      return res.status(401).json({ error: "Missing x-user-id header" });
+      return res.status(401).json({ error: "Missing user identity" });
     }
 
     const db = await connectMongo();
 
-    const user = await db
-      .collection("users")
-      .findOne({ _id: new ObjectId(userId) }, { projection: { password: 0 } });
+    const user = await db.collection("users").findOne(
+      { _id: new ObjectId(String(userId)) },
+      { projection: { password: 0 } }
+    );
 
     if (!user) {
       return res.status(404).json({ error: "User not found" });
