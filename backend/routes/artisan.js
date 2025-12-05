@@ -27,6 +27,7 @@ function getCurrentUserId(req) {
 router.get("/search", async (req, res) => {
   try {
     const query = String(req.query.q || "").trim();
+    const currentUserId = getCurrentUserId(req);
 
     if (!query) {
       return res.status(400).json({ error: "Missing search query" });
@@ -50,7 +51,31 @@ router.get("/search", async (req, res) => {
       .limit(20)
       .toArray();
 
-    res.json({ artisans: results });
+    const driver = req.neo4jDriver;
+
+    // Enrich artisans with followers stats when Neo4j is available
+    const artisansWithStats = driver
+      ? await Promise.all(
+          results.map(async (artisan) => {
+            const stats = await getArtisanStats(
+              driver,
+              artisan._id.toString(),
+              currentUserId
+            );
+
+            return {
+              ...artisan,
+              _id: artisan._id.toString(),
+              followers: stats.followers,
+            };
+          })
+        )
+      : results.map((artisan) => ({
+          ...artisan,
+          _id: artisan._id.toString(),
+        }));
+
+    res.json({ artisans: artisansWithStats });
   } catch (err) {
     console.error("Error searching artisans:", err);
     res.status(500).json({ error: "Server error searching artisans" });
