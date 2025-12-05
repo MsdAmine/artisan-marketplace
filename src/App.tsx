@@ -11,6 +11,7 @@ import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
 import ArtisanProfile from "@/pages/ArtisanProfile";
 import EditArtisanProfile from "@/pages/EditArtisanProfile";
+import Profile from "@/pages/Profile";
 
 export default function App() {
   const location = useLocation();
@@ -57,6 +58,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <Cart />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />
