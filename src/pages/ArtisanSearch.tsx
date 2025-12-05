@@ -106,28 +106,6 @@ export default function ArtisanSearch() {
                       </Button>
                     </div>
                   </div>
-
-                  {/* Quick Suggestions */}
-                  <div className="flex flex-wrap gap-2 justify-center pt-2">
-                    <span className="text-sm text-muted-foreground">
-                      Suggestions :
-                    </span>
-                    {["Tapis", "Poterie", "Bijoux", "Marrakech", "Fès"].map(
-                      (tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => {
-                            setQuery(tag);
-                            setSearchParams({ q: tag });
-                          }}
-                          className="text-sm px-3 py-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"
-                        >
-                          {tag}
-                        </button>
-                      )
-                    )}
-                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -222,9 +200,9 @@ export default function ArtisanSearch() {
                 Résultats de recherche
               </h2>
               <p className="text-muted-foreground">
-                {`${results.length} artisan${results.length > 1 ? "s" : ""} trouvé${
+                {`${results.length} artisan${
                   results.length > 1 ? "s" : ""
-                }`}
+                } trouvé${results.length > 1 ? "s" : ""}`}
               </p>
             </div>
 
