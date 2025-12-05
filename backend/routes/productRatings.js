@@ -70,7 +70,6 @@ router.post("/", auth, async (req, res) => {
       }
 
       const productObjectId = new ObjectId(productId);
-      const effectiveOrderItemId = orderItemId || matchingOrderItem._id || null;
 
       operations.push({
         updateOne: {
@@ -82,7 +81,7 @@ router.post("/", auth, async (req, res) => {
           update: {
             $set: {
               rating: numericRating,
-              orderItemId: effectiveOrderItemId,
+              orderItemId,
               productName: matchingOrderItem.productName || null,
               quantity: matchingOrderItem.quantity || 1,
               updatedAt: new Date(),
