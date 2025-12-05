@@ -1,10 +1,10 @@
-const cloudinary = require("cloudinary");
+const { v2: cloudinary } = require("cloudinary");
 
-cloudinary.v2.config({
+cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_KEY,
   api_secret: process.env.CLOUDINARY_SECRET,
-  secure: true // Force HTTPS URLs (recommended)
+  secure: true, // Force HTTPS URLs (recommended)
 });
 
 if (!process.env.CLOUDINARY_NAME || !process.env.CLOUDINARY_KEY || !process.env.CLOUDINARY_SECRET) {
