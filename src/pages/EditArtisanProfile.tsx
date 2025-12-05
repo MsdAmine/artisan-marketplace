@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,24 +11,20 @@ import { useAuth } from "@/context/AuthContext";
 export default function EditArtisanProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth(); // Logged‑in artisan
+  const { user, loading: authLoading } = useAuth(); // Logged‑in artisan
 
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
-  // Redirect if trying to edit someone else's profile
-  useEffect(() => {
-    if (!user) return;
-    if (user.id !== id) navigate("/not-authorized");
-  }, [user, id, navigate]);
+  const canEdit = useMemo(() => {
+    if (!user || !id) return false;
+    return user.id === id && user.role === "artisan";
+  }, [id, user]);
 
-  useEffect(() => {
-    fetchProfile();
-  }, [id]);
-
-  async function fetchProfile() {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch(
         `http://localhost:3000/api/artisans/${id}/profile`
@@ -41,7 +37,20 @@ export default function EditArtisanProfile() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  // Redirect if trying to edit someone else's profile
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!canEdit) {
+      setAccessDenied(true);
+      setLoading(false);
+      return;
+    }
+
+    fetchProfile();
+  }, [authLoading, canEdit, fetchProfile]);
 
   function handleAvatarChange(e: any) {
     const file = e.target.files[0];
@@ -101,10 +110,33 @@ export default function EditArtisanProfile() {
     }
   }
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Chargement...
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <Card className="max-w-lg w-full text-center border-destructive/40">
+          <CardHeader>
+            <CardTitle className="text-xl">Accès refusé</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-muted-foreground">
+            <p>Vous ne pouvez modifier que votre propre profil artisan.</p>
+            <div className="flex justify-center gap-3">
+              <Button variant="outline" onClick={() => navigate(-1)}>
+                Retour
+              </Button>
+              <Button onClick={() => navigate(`/artisan/${id}`)}>
+                Voir le profil
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

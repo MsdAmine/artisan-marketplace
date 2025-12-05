@@ -10,6 +10,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/auth/Login";
 import Signup from "@/pages/auth/Signup";
 import ArtisanProfile from "@/pages/ArtisanProfile";
+import EditArtisanProfile from "@/pages/EditArtisanProfile";
 
 export default function App() {
   const location = useLocation();
@@ -33,6 +34,14 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
 
           <Route path="/artisan/:id" element={<ArtisanProfile />} />
+          <Route
+            path="/artisan/:id/edit"
+            element={
+              <ProtectedRoute roles={["artisan"]}>
+                <EditArtisanProfile />
+              </ProtectedRoute>
+            }
+          />
           
           {/* Protected routes */}
           <Route
