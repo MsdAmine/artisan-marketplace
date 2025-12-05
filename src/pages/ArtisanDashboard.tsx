@@ -48,6 +48,73 @@ export default function ArtisanDashboard() {
   const outOfStockProducts = products.filter((p) => p.stock === 0);
   const { user } = useAuth();
 
+  const productSalesMetric = (product) =>
+    product?.totalSales ??
+    product?.salesCount ??
+    product?.sales ??
+    product?.sold ??
+    product?.ordersCount ??
+    0;
+
+  const bestSellingProduct = products.reduce(
+    (best, product) => {
+      const sales = productSalesMetric(product);
+
+      if (sales > best.salesMetric) {
+        return { product, salesMetric: sales };
+      }
+
+      return best;
+    },
+    { product: null, salesMetric: 0 }
+  );
+
+  const totalSalesMetric = products.reduce(
+    (total, product) => total + productSalesMetric(product),
+    0
+  );
+
+  const averagePrice =
+    products.length > 0
+      ? products.reduce((sum, product) => sum + (product.price || 0), 0) /
+        products.length
+      : 0;
+
+  const highestPrice = products.reduce(
+    (max, product) => Math.max(max, product.price || 0),
+    0
+  );
+
+  const totalInventoryValue = products.reduce(
+    (sum, product) => sum + (product.price || 0) * (product.stock || 0),
+    0
+  );
+
+  const maxInventoryValue = products.reduce(
+    (max, product) =>
+      Math.max(max, (product.price || 0) * (product.stock || 0)),
+    0
+  );
+
+  const bestSellingPercent =
+    totalSalesMetric > 0
+      ? Math.min((bestSellingProduct.salesMetric / totalSalesMetric) * 100, 100)
+      : products.length > 0
+      ? 100
+      : 0;
+
+  const averagePricePercent =
+    highestPrice > 0 ? Math.min((averagePrice / highestPrice) * 100, 100) : 0;
+
+  const inventoryValuePercent =
+    maxInventoryValue > 0
+      ? Math.min(
+          (totalInventoryValue / (maxInventoryValue * Math.max(products.length, 1))) *
+            100,
+          100
+        )
+      : 0;
+
   async function loadProducts() {
     if (!user) return;
 
@@ -594,12 +661,15 @@ export default function ArtisanDashboard() {
                     <span className="text-muted-foreground">
                       Produit le plus vendu
                     </span>
-                    <span className="font-medium">Tapis berbère</span>
+                    <span className="font-medium">
+                      {bestSellingProduct.product?.name ||
+                        (products.length ? "N/A" : "Aucun produit")}
+                    </span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
                     <div
                       className="bg-primary h-2 rounded-full"
-                      style={{ width: "85%" }}
+                      style={{ width: `${bestSellingPercent}%` }}
                     ></div>
                   </div>
                 </div>
@@ -609,12 +679,16 @@ export default function ArtisanDashboard() {
                     <span className="text-muted-foreground">
                       Moyenne des prix
                     </span>
-                    <span className="font-medium">245 MAD</span>
+                    <span className="font-medium">
+                      {averagePrice.toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })} MAD
+                    </span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
                     <div
                       className="bg-secondary h-2 rounded-full"
-                      style={{ width: "60%" }}
+                      style={{ width: `${averagePricePercent}%` }}
                     ></div>
                   </div>
                 </div>
@@ -622,12 +696,16 @@ export default function ArtisanDashboard() {
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Valeur totale</span>
-                    <span className="font-medium">12,450 MAD</span>
+                    <span className="font-medium">
+                      {totalInventoryValue.toLocaleString(undefined, {
+                        maximumFractionDigits: 0,
+                      })} MAD
+                    </span>
                   </div>
                   <div className="w-full bg-border rounded-full h-2">
                     <div
                       className="bg-emerald-500 h-2 rounded-full"
-                      style={{ width: "75%" }}
+                      style={{ width: `${inventoryValuePercent}%` }}
                     ></div>
                   </div>
                 </div>
