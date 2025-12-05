@@ -24,12 +24,15 @@ import {
 
 import { useAuth } from "@/context/AuthContext";
 import { trackInteraction } from "@/api/recommendations";
+import { useArtisanName } from "@/hooks/useArtisanName";
 
 export default function ProductModal({ open, onClose, product }: any) {
   const [loading, setLoading] = useState(false);
   const [added, setAdded] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const { user } = useAuth();
+
+  const artisanName = useArtisanName(product?.artisanId);
 
   // If no product, do not render the modal
   if (!product) return null;
@@ -286,7 +289,7 @@ export default function ProductModal({ open, onClose, product }: any) {
                 <div>
                   <p className="text-muted-foreground mb-1">Artisan</p>
                   <p className="font-medium">
-                    {product.artisan || "Artisan local"}
+                    {artisanName || product.artisan || "Artisan local"}
                   </p>
                 </div>
                 <div>
