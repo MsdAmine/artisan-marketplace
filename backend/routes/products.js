@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
+const { getFollowers } = require("../neo4j/actions");
 
 // ===============================================
 // PRODUCT CRUD & FETCHING
@@ -86,6 +87,29 @@ router.post("/", async (req, res) => {
     };
 
     const result = await db.collection("products").insertOne(product);
+
+    // Notify followers that this artisan published a new product
+    try {
+      const followerIds = req.neo4jDriver
+        ? await getFollowers(req.neo4jDriver, product.artisanId)
+        : [];
+
+      if (followerIds.length > 0) {
+        const notifications = followerIds.map((userId) => ({
+          userId,
+          artisanId: product.artisanId,
+          productId: result.insertedId.toString(),
+          productName: product.name,
+          type: "new_product",
+          read: false,
+          createdAt: new Date(),
+        }));
+
+        await db.collection("notifications").insertMany(notifications);
+      }
+    } catch (notificationErr) {
+      console.error("Failed to create notifications for followers", notificationErr);
+    }
 
     res.json({ insertedId: result.insertedId, product });
   } catch (err) {

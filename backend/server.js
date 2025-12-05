@@ -23,6 +23,7 @@ const authRoute = require("./routes/auth");
 const productRatingsRoute = require("./routes/productRatings");
 const recommendationRoutes = require("./routes/recommendations");
 const userRoutes = require("./routes/users");
+const notificationRoutes = require("./routes/notifications");
 
 let neo4jDriver;
 
@@ -63,6 +64,7 @@ app.use("/api/orders", ordersRoute);
 app.use("/api/stats", statsRoutes);
 app.use("/api/auth", authRoute);
 app.use("/api/product-ratings", productRatingsRoute);
+app.use("/api/notifications", notificationRoutes);
 
 async function startServer() {
   await connectMongo();
