@@ -17,6 +17,15 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const initialAuth = (() => {
+  try {
+    return JSON.parse(localStorage.getItem("auth") || "null");
+  } catch (err) {
+    console.error("Failed to parse auth from storage", err);
+    return null;
+  }
+})();
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initialAuth = JSON.parse(localStorage.getItem("auth") || "null");
 
@@ -24,51 +33,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(initialAuth?.token || null);
   const [loading, setLoading] = useState(false); // no delay
 
-  // Load stored auth
   useEffect(() => {
-    const saved = localStorage.getItem("auth");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      setUser(parsed.user);
-      setToken(parsed.token);
-    }
-    setLoading(false);
-  }, []);
+    if (!token) return;
 
-  useEffect(() => {
+    let cancelled = false;
+
     async function loadUser() {
-      const savedToken = localStorage.getItem("token");
-      if (!savedToken) {
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
 
       try {
         const res = await fetch("http://localhost:3000/api/users/me", {
           headers: {
-            "x-user-id": JSON.parse(localStorage.getItem("auth")!)?.user.id,
+            Authorization: `Bearer ${token}`,
           },
         });
 
+        if (!res.ok) return;
+
         const data = await res.json();
 
-        if (res.ok) {
-          setUser({
-            id: data.id,
-            email: data.email,
-            role: data.role,
-          });
-          setToken(savedToken);
-        }
+        if (cancelled) return;
+
+        setUser({
+          id: data.id,
+          email: data.email,
+          role: data.role,
+        });
       } catch (err) {
         console.error("Auth load error:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      setLoading(false);
     }
 
     loadUser();
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   // 👉 Re-add these two functions:
   function login(token: string, user: User) {

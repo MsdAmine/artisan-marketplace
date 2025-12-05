@@ -44,7 +44,7 @@ export default function ArtisanDashboard() {
 
   const lowStockProducts = products.filter((p) => p.stock < 5);
   const outOfStockProducts = products.filter((p) => p.stock === 0);
-  const { user } = useAuth();
+  const { user, token } = useAuth();
 
   async function loadProducts() {
     if (!user) return;
@@ -77,13 +77,11 @@ export default function ArtisanDashboard() {
 
     try {
       const res = await fetch("http://localhost:3000/api/stats/artisan", {
-        headers: {
-          Authorization: `Bearer ${
-            localStorage.getItem("auth")
-              ? JSON.parse(localStorage.getItem("auth")).token
-              : ""
-          }`,
-        },
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
       });
 
       if (!res.ok) {
