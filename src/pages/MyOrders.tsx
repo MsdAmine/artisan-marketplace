@@ -37,6 +37,7 @@ import {
   ShoppingBag,
   RefreshCw,
   AlertCircle,
+  Star,
 } from "lucide-react";
 
 export default function MyOrders() {
@@ -46,6 +47,103 @@ export default function MyOrders() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [error, setError] = useState<string | null>(null);
+  const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
+  const [submittingRating, setSubmittingRating] = useState(false);
+  const [ratingMessage, setRatingMessage] = useState<string | null>(null);
+  const [ratingMessageType, setRatingMessageType] = useState<
+    "info" | "error" | null
+  >(null);
+
+  const buildItemRatingKey = (
+    orderId: string,
+    item: any,
+    index: number
+  ) => {
+    return [
+      orderId,
+      item.productId,
+      item.product?._id,
+      item._id,
+      item.productName,
+      index,
+    ]
+      .filter(Boolean)
+      .join(":");
+  };
+
+  const handleRateItem = (
+    orderId: string,
+    item: any,
+    index: number,
+    rating: number
+  ) => {
+    const key = buildItemRatingKey(orderId, item, index);
+    setItemRatings((prev) => ({
+      ...prev,
+      [key]: rating,
+    }));
+  };
+
+  const getRatedItemsForOrder = (order: any) => {
+    return (order.items || [])
+      .map((item: any, index: number) => {
+        const key = buildItemRatingKey(order._id, item, index);
+        const rating = itemRatings[key];
+
+        if (!rating) return null;
+
+        return {
+          orderId: order._id,
+          orderItemId: item._id,
+          productId: item.productId || item.product?._id || "",
+          productName: item.productName,
+          rating,
+          quantity: item.quantity,
+        };
+      })
+      .filter(
+        (item): item is {
+          orderId: string;
+          orderItemId: string;
+          productId: string;
+          productName: string;
+          rating: number;
+          quantity: number;
+        } => Boolean(item)
+      );
+  };
+
+  const handleSubmitRatings = async (order: any) => {
+    const ratedItems = getRatedItemsForOrder(order);
+
+    if (!ratedItems.length) {
+      setRatingMessage(
+        "Sélectionnez une note pour au moins un produit avant de l'enregistrer."
+      );
+      setRatingMessageType("error");
+      return;
+    }
+
+    setSubmittingRating(true);
+    setRatingMessage(null);
+    setRatingMessageType(null);
+
+    try {
+      // Replace this console.log with your API call to persist ratings
+      console.log("Payload de notes à persister", {
+        userId: order.userId,
+        orderId: order._id,
+        ratings: ratedItems,
+      });
+
+      setRatingMessage(
+        "Notes enregistrées (simulation). Stockez-les dans une collection dédiée reliée à l'utilisateur, au produit et à l'item de commande."
+      );
+      setRatingMessageType("info");
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   async function loadOrders() {
     setLoading(true);
@@ -64,6 +162,12 @@ export default function MyOrders() {
   useEffect(() => {
     loadOrders();
   }, []);
+
+  useEffect(() => {
+    setRatingMessage(null);
+    setRatingMessageType(null);
+    setSubmittingRating(false);
+  }, [selectedOrder]);
 
   // Filter orders based on status
   const filteredOrders = orders.filter((order) => {
@@ -579,6 +683,53 @@ export default function MyOrders() {
                               <p className="font-medium">
                                 {item.productName || "Produit"}
                               </p>
+                              {selectedOrder.status === "delivered" && (
+                                <div className="py-2">
+                                  <p className="text-xs text-muted-foreground mb-1">
+                                    Notez ce produit
+                                  </p>
+                                  <div className="flex gap-1 text-muted-foreground">
+                                    {[...Array(5)].map((_, starIndex) => {
+                                      const starValue = starIndex + 1;
+                                      const itemKey = buildItemRatingKey(
+                                        selectedOrder._id,
+                                        item,
+                                        index
+                                      );
+                                      const isActive =
+                                        itemRatings[itemKey] >= starValue;
+
+                                      return (
+                                        <button
+                                          type="button"
+                                          key={starIndex}
+                                          onClick={() =>
+                                            handleRateItem(
+                                              selectedOrder._id,
+                                              item,
+                                              index,
+                                              starValue
+                                            )
+                                          }
+                                          className={`transition-colors ${
+                                            isActive
+                                              ? "text-amber-500"
+                                              : "text-muted-foreground hover:text-amber-400"
+                                          }`}
+                                          aria-label={`Noter ${starValue} étoile${
+                                            starValue === 1 ? "" : "s"
+                                          } pour ${
+                                            item.productName || "ce produit"
+                                          }`}
+                                          aria-pressed={isActive}
+                                        >
+                                          <Star className="h-4 w-4 fill-current" />
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                               <p className="text-sm text-muted-foreground">
                                 Quantité: {item.quantity || 1}
                               </p>
@@ -620,6 +771,38 @@ export default function MyOrders() {
                     </div>
                   </div>
                 </CardContent>
+                {selectedOrder.status === "delivered" && (
+                  <CardFooter className="flex-col items-start gap-3 border-t border-border">
+                    <div className="flex items-center gap-3 w-full flex-wrap">
+                      <Button
+                        className="rounded-apple"
+                        variant="default"
+                        onClick={() => handleSubmitRatings(selectedOrder)}
+                        disabled={submittingRating}
+                      >
+                        {submittingRating
+                          ? "Enregistrement..."
+                          : "Enregistrer mes notes"}
+                      </Button>
+                      <p className="text-sm text-muted-foreground">
+                        Astuce stockage : créez une collection "productRatings" avec
+                        userId, productId, orderItemId, rating, orderId et timestamps
+                        pour éviter les doublons et historiser les avis.
+                      </p>
+                    </div>
+                    {ratingMessage && (
+                      <p
+                        className={`text-sm ${
+                          ratingMessageType === "error"
+                            ? "text-red-600"
+                            : "text-emerald-600"
+                        }`}
+                      >
+                        {ratingMessage}
+                      </p>
+                    )}
+                  </CardFooter>
+                )}
               </Card>
 
               {/* Shipping and Payment Info */}
