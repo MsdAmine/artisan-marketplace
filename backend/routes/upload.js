@@ -5,13 +5,23 @@ const cloudinary = require("../utils/cloudinary");
 
 const router = express.Router();
 
-const storage = cloudinaryStorage({
-  cloudinary,
-  params: {
-    folder: "artisan_market", // Folder name in Cloudinary
-    allowed_formats: ["jpg", "png", "jpeg", "webp"], // FIXED KEY
-  },
-});
+const StorageCtor = cloudinaryStorage.CloudinaryStorage || cloudinaryStorage;
+const storage =
+  typeof StorageCtor === "function" && StorageCtor.prototype
+    ? new StorageCtor({
+        cloudinary,
+        params: {
+          folder: "artisan_market", // Folder name in Cloudinary
+          allowed_formats: ["jpg", "png", "jpeg", "webp"], // FIXED KEY
+        },
+      })
+    : cloudinaryStorage({
+        cloudinary,
+        params: {
+          folder: "artisan_market", // Folder name in Cloudinary
+          allowed_formats: ["jpg", "png", "jpeg", "webp"], // FIXED KEY
+        },
+      });
 
 const upload = multer({ storage });
 
