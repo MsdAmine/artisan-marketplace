@@ -12,6 +12,8 @@ export default function EditArtisanProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth(); // Logged‑in artisan
+  const apiBaseUrl =
+    import.meta.env.VITE_API_URL?.replace(/\/$/, "") || window.location.origin;
 
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ export default function EditArtisanProfile() {
   const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch(
-        `http://localhost:3000/api/artisans/${id}/profile`
+        new URL(`/api/artisans/${id}/profile`, apiBaseUrl).toString()
       );
       const data = await res.json();
       setProfile(data.artisan);
@@ -39,7 +41,7 @@ export default function EditArtisanProfile() {
     } finally {
       setLoading(false);
     }
-  }, [id]); // Redirect if trying to edit someone else's profile
+  }, [apiBaseUrl, id]); // Redirect if trying to edit someone else's profile
 
   useEffect(() => {
     if (authLoading) return; // If the user is logged in, but not the correct artisan for this ID, deny access.
@@ -83,10 +85,15 @@ export default function EditArtisanProfile() {
         const formData = new FormData();
         formData.append("image", profile.avatarFile);
 
-        const uploadRes = await fetch("http://localhost:3000/api/upload", {
+        const uploadRes = await fetch(
+          new URL("/api/upload", apiBaseUrl).toString(),
+          {
           method: "POST",
           body: formData,
-        });
+          }
+        );
+
+        if (!uploadRes.ok) throw new Error("Upload failed");
 
         if (!uploadRes.ok) throw new Error("Upload failed");
 
@@ -94,7 +101,7 @@ export default function EditArtisanProfile() {
         avatarUrl = uploadData.url;
       } // --- Send update request ---
 
-      const res = await fetch(`http://localhost:3000/api/artisans/${id}`, {
+      const res = await fetch(new URL(`/api/artisans/${id}`, apiBaseUrl).toString(), {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
