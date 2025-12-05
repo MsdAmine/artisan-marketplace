@@ -46,6 +46,10 @@ router.get("/:artisanId/profile", async (req, res) => {
     if (!artisan) {
       return res.status(404).json({ error: "Artisan not found" });
     }
+    // FIX: Ensure joinedDate is available (using _id timestamp if missing)
+    if (!artisan.joinedDate) {
+      artisan.joinedDate = new ObjectId(artisan._id).getTimestamp().toISOString();
+    }
 
     // 2️⃣ Fetch artisan products
     const products = await db
@@ -53,16 +57,87 @@ router.get("/:artisanId/profile", async (req, res) => {
       .find({ artisanId: artisanId }) // artisanId stored as STRING
       .toArray();
 
-    // 3️⃣ Fetch Neo4j stats
+    // 3️⃣ Fetch Neo4j stats & Mongo Sales/Rating Stats
+
+    // A. Get Neo4j Stats (Followers)
     const driver = req.neo4jDriver;
-    let stats = { followers: 0, isFollowing: false };
+    let neo4jStats = { followers: 0, isFollowing: false };
 
     if (driver) {
-      stats = await getArtisanStats(driver, artisanId, currentUserId);
+      neo4jStats = await getArtisanStats(driver, artisanId, currentUserId);
     }
 
+    // B. Get Mongo Ratings Stats (using aggregation)
+    const mongoRatingStats = await db.collection("products")
+      .aggregate([
+        { $match: { artisanId: artisanId } },
+        {
+          $group: {
+            _id: "$artisanId",
+            totalRatingSum: { $sum: "$totalRating" },
+            totalRatings: { $sum: "$numRatings" }
+          }
+        }
+      ])
+      .toArray();
+
+    const ratingData = mongoRatingStats[0] || {};
+    let averageRating = 0;
+
+    if (ratingData.totalRatings && ratingData.totalRatings > 0) {
+      // Calculate average rating, rounding to one decimal place
+      averageRating = Math.round((ratingData.totalRatingSum / ratingData.totalRatings) * 10) / 10;
+    }
+
+    // C. Get Mongo Sales Stats (Aggregation using Orders and Products)
+    // This pipeline links items in the orders collection back to the product, 
+    // and then filters by the product's artisanId to calculate total sales.
+    const totalSalesResult = await db.collection("orders")
+      .aggregate([
+        // Flatten the items array so each order line is its own document
+        { $unwind: "$items" },
+        {
+          // Lookup the product details from the products collection
+          $lookup: {
+            from: "products",
+            // Use $lookup with pipeline to ensure correct type conversion for ObjectId
+            let: { productIdStr: "$items.productId" },
+            pipeline: [
+              // Convert the string productId to ObjectId for matching against product's _id
+              { $match: { $expr: { $eq: ["$_id", { $toObjectId: "$$productIdStr" }] } } },
+            ],
+            as: "productDetails"
+          }
+        },
+        // Remove orders whose line item couldn't be linked to a product
+        { $match: { "productDetails": { $ne: [] } } },
+        // Flatten the productDetails array
+        { $unwind: "$productDetails" },
+        // Match the line items that belong to the target artisan
+        { $match: { "productDetails.artisanId": artisanId } },
+        {
+          // Group all matched line items and sum the quantities
+          $group: {
+            _id: null,
+            // ASSUMPTION: The sales quantity is stored in items.quantity
+            totalSales: { $sum: "$items.quantity" }
+          }
+        }
+      ])
+      .toArray();
+
+    const totalSales = totalSalesResult[0]?.totalSales || 0;
+
+    // Merge Neo4j and Mongo stats
+    const finalStats = {
+      ...neo4jStats,
+      totalSales: totalSales,
+      averageRating: averageRating,
+    };
+
     // 4️⃣ Respond with profile
-    res.json({ artisan, products, stats });
+    res.json({ artisan, products, stats: finalStats });
+
   } catch (err) {
     console.error("Error fetching artisan profile:", err);
     res.status(500).json({
@@ -121,7 +196,7 @@ router.post("/:artisanId/unfollow", async (req, res) => {
 });
 
 // ===============================================
-// UPDATE ARTISAN PROFILE  →  PUT /api/artisans/:id
+// UPDATE ARTISAN PROFILE  →  PUT /api/artisans/:id
 // ===============================================
 router.put("/:id", async (req, res) => {
   try {

@@ -31,7 +31,7 @@ interface ArtisanProfileData {
     _id: string;
     name: string;
     avatar: string;
-    location: string;   
+    location: string;
     bio: string;
     email?: string;
     phone?: string;
@@ -122,9 +122,9 @@ export default function ArtisanProfile() {
       await fetch(
         new URL(`/api/artisans/${id}/${action}`, apiBaseUrl).toString(),
         {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: currentUser.id }),
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: currentUser.id }),
         }
       );
 
@@ -294,12 +294,12 @@ export default function ArtisanProfile() {
               <CardContent className="space-y-4">
                 <Stat
                   label="Produits actifs"
-                  value={stats.totalProducts}
+                  value={products.length}
                   icon={Package}
                 />
                 <Stat
                   label="Total des ventes"
-                  value={stats.totalSales}
+                  value={stats.totalSales ?? 0}
                   icon={ShoppingBag}
                 />
                 <Stat
@@ -309,7 +309,18 @@ export default function ArtisanProfile() {
                 />
                 <Stat
                   label="Depuis"
-                  value={new Date(artisan.joinedDate || "").getFullYear()}
+                  value={
+                    artisan.joinedDate
+                      ? new Date(artisan.joinedDate).toLocaleDateString(
+                          "fr-FR",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                          }
+                        )
+                      : "N/A"
+                  }
                   icon={Calendar}
                 />
               </CardContent>
