@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getOrders } from "@/api/orders";
+import { submitProductRatings } from "@/api/productRatings";
 import {
   Card,
   CardContent,
@@ -101,6 +102,7 @@ export default function MyOrders() {
           quantity: item.quantity,
         };
       })
+      .filter((item) => item.productId)
       .filter(
         (item): item is {
           orderId: string;
@@ -129,17 +131,23 @@ export default function MyOrders() {
     setRatingMessageType(null);
 
     try {
-      // Replace this console.log with your API call to persist ratings
-      console.log("Payload de notes à persister", {
-        userId: order.userId,
-        orderId: order._id,
-        ratings: ratedItems,
-      });
-
-      setRatingMessage(
-        "Notes enregistrées (simulation). Stockez-les dans une collection dédiée reliée à l'utilisateur, au produit et à l'item de commande."
+      await submitProductRatings(
+        order._id,
+        ratedItems.map((item) => ({
+          productId: item.productId,
+          rating: item.rating,
+          orderItemId: item.orderItemId || null,
+        }))
       );
+
+      setRatingMessage("Notes enregistrées avec succès.");
       setRatingMessageType("info");
+    } catch (err: any) {
+      console.error("Erreur lors de l'enregistrement des notes", err);
+      setRatingMessage(
+        err?.message || "Impossible d'enregistrer vos notes pour le moment."
+      );
+      setRatingMessageType("error");
     } finally {
       setSubmittingRating(false);
     }

@@ -20,6 +20,7 @@ const cartRoute = require("./routes/cart");
 const ordersRoute = require("./routes/orders");
 const statsRoutes = require("./routes/stats");
 const authRoute = require("./routes/auth");
+const productRatingsRoute = require("./routes/productRatings");
 const recommendationRoutes = require("./routes/recommendations");
 const userRoutes = require("./routes/users");
 
@@ -61,6 +62,7 @@ app.use("/api/cart", cartRoute);
 app.use("/api/orders", ordersRoute);
 app.use("/api/stats", statsRoutes);
 app.use("/api/auth", authRoute);
+app.use("/api/product-ratings", productRatingsRoute);
 
 async function startServer() {
   await connectMongo();
