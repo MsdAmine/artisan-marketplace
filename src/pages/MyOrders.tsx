@@ -633,10 +633,10 @@ export default function MyOrders() {
                   </CardHeader>
                   <CardContent className="space-y-2">
                     <p className="font-medium">
-                      {selectedOrder.deliveryAddress?.name || "Client"}
+                      {selectedOrder.deliveryAddress?.fullName || "Client"}
                     </p>
                     <p className="text-sm">
-                      {selectedOrder.deliveryAddress?.street ||
+                      {selectedOrder.deliveryAddress?.address ||
                         "Adresse inconnue"}
                     </p>
                     <p className="text-sm">
