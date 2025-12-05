@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import ProductModal from "./ProductModal";
 import {
   Package,
@@ -18,6 +19,26 @@ import {
 
 export default function ProductCard({ p, viewMode = "grid" }: any) {
   const [open, setOpen] = useState(false);
+
+  const artisanName = p.artisan || "artisan local";
+  const artisanProfilePath = p.artisanId ? `/artisan/${p.artisanId}` : null;
+
+  const renderArtisanLink = (
+    <div className="flex items-center gap-2 text-sm">
+      <span className="text-muted-foreground">Par</span>
+      {artisanProfilePath ? (
+        <Link
+          to={artisanProfilePath}
+          onClick={(e) => e.stopPropagation()}
+          className="font-medium text-primary hover:underline"
+        >
+          {artisanName}
+        </Link>
+      ) : (
+        <span className="text-muted-foreground">{artisanName}</span>
+      )}
+    </div>
+  );
 
   // Check if product is low stock
   const isLowStock = p.stock < 5;
@@ -93,9 +114,7 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
                       {p.stock} en stock
                     </span>
                   </div>
-                  <span className="text-sm text-muted-foreground">
-                    Par {p.artisan || "artisan local"}
-                  </span>
+                  {renderArtisanLink}
                 </div>
                 <Button
                   className="gap-2 rounded-apple"
@@ -172,6 +191,8 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
             <p className="text-muted-foreground text-sm mb-3 line-clamp-2">
               {p.description || "Produit artisanal de qualité supérieure."}
             </p>
+
+            {renderArtisanLink}
           </div>
 
           <div className="mt-auto">
