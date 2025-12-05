@@ -30,7 +30,9 @@ export default function ArtisanSearch() {
 
   useEffect(() => {
     const currentQuery = searchParams.get("q")?.trim() || "";
-    if (!currentQuery) {
+    const viewingAll = searchParams.get("view") === "all";
+
+    if (!currentQuery && !viewingAll) {
       setResults([]);
       return;
     }
@@ -55,10 +57,16 @@ export default function ArtisanSearch() {
   const onSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const trimmed = query.trim();
-    setSearchParams(trimmed ? { q: trimmed } : {});
+    setSearchParams(trimmed ? { q: trimmed } : { view: "all" });
   };
 
   const hasSearchQuery = searchParams.get("q");
+  const isViewingAll = searchParams.get("view") === "all";
+  const shouldShowResults = Boolean(hasSearchQuery) || isViewingAll;
+  const resultTitle = isViewingAll ? "Tous les artisans" : "Résultats de recherche";
+  const resultSubtitle = `${results.length} artisan${results.length > 1 ? "s" : ""} trouvé${
+    results.length > 1 ? "s" : ""
+  }`;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -89,7 +97,7 @@ export default function ArtisanSearch() {
                     <div className="absolute right-2 top-1/2 -translate-y-1/2">
                       <Button
                         type="submit"
-                        disabled={!query.trim() || loading}
+                        disabled={loading}
                         className="rounded-apple gap-2 px-6 py-2"
                       >
                         {loading ? (
@@ -127,6 +135,18 @@ export default function ArtisanSearch() {
                         </button>
                       )
                     )}
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="rounded-apple"
+                      onClick={() => {
+                        setQuery("");
+                        setSearchParams({ view: "all" });
+                      }}
+                    >
+                      Voir tous les artisans
+                    </Button>
                   </div>
                 </form>
               </CardContent>
@@ -162,7 +182,7 @@ export default function ArtisanSearch() {
         )}
 
         {/* No Results State */}
-        {!loading && !error && hasSearchQuery && results.length === 0 && (
+        {!loading && !error && shouldShowResults && results.length === 0 && (
           <Card className="rounded-apple border-border">
             <CardContent className="p-12 text-center">
               <User className="h-16 w-16 text-muted-foreground/50 mx-auto mb-4" />
@@ -170,15 +190,21 @@ export default function ArtisanSearch() {
                 Aucun artisan trouvé
               </h3>
               <p className="text-muted-foreground mb-6">
-                Aucun résultat pour "
-                <span className="font-semibold">{searchParams.get("q")}</span>"
+                {isViewingAll
+                  ? "Nous n'avons pas encore d'artisans à afficher."
+                  : (
+                      <>
+                        Aucun résultat pour "
+                        <span className="font-semibold">{searchParams.get("q")}</span>"
+                      </>
+                    )}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
                   variant="outline"
                   onClick={() => {
                     setQuery("");
-                    setSearchParams({});
+                    setSearchParams({ view: "all" });
                   }}
                   className="rounded-apple"
                 >
@@ -186,7 +212,10 @@ export default function ArtisanSearch() {
                 </Button>
                 <Button
                   variant="default"
-                  onClick={() => setQuery("")}
+                  onClick={() => {
+                    setQuery("");
+                    setSearchParams({});
+                  }}
                   className="rounded-apple"
                 >
                   Nouvelle recherche
@@ -197,7 +226,7 @@ export default function ArtisanSearch() {
         )}
 
         {/* Prompt to search */}
-        {!loading && !error && !hasSearchQuery && (
+        {!loading && !error && !shouldShowResults && (
           <Card className="rounded-apple border-border">
             <CardContent className="p-10 text-center space-y-4">
               <Search className="h-12 w-12 text-muted-foreground mx-auto" />
@@ -215,17 +244,13 @@ export default function ArtisanSearch() {
         )}
 
         {/* Results Grid */}
-        {!loading && !error && hasSearchQuery && results.length > 0 && (
+        {!loading && !error && shouldShowResults && results.length > 0 && (
           <div className="space-y-8">
             <div className="text-center">
               <h2 className="text-2xl font-semibold tracking-tight mb-2">
-                Résultats de recherche
+                {resultTitle}
               </h2>
-              <p className="text-muted-foreground">
-                {`${results.length} artisan${results.length > 1 ? "s" : ""} trouvé${
-                  results.length > 1 ? "s" : ""
-                }`}
-              </p>
+              <p className="text-muted-foreground">{resultSubtitle}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
