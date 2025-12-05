@@ -27,6 +27,8 @@ const initialAuth = (() => {
 })();
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const initialAuth = JSON.parse(localStorage.getItem("auth") || "null");
+
   const [user, setUser] = useState<User | null>(initialAuth?.user || null);
   const [token, setToken] = useState<string | null>(initialAuth?.token || null);
   const [loading, setLoading] = useState(false); // no delay
