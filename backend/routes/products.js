@@ -26,7 +26,6 @@ router.get("/", async (req, res) => {
 // GET products by artisan (READ)
 // ---------------------------------------
 router.get("/by-artisan/:artisanId", async (req, res) => {
-  console.log("Fetching products for artisan:", req.params.artisanId);
   try {
     const db = await connectMongo();
     const products = await db
