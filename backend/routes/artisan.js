@@ -67,17 +67,32 @@ router.get("/:artisanId/profile", async (req, res) => {
       neo4jStats = await getArtisanStats(driver, artisanId, currentUserId);
     }
 
-    // B. Get Mongo Ratings Stats (using aggregation)
-    const mongoRatingStats = await db.collection("products")
+    // B. Get Mongo Ratings Stats from the dedicated productRatings collection
+    const mongoRatingStats = await db.collection("productRatings")
       .aggregate([
-        { $match: { artisanId: artisanId } },
+        {
+          $lookup: {
+            from: "products",
+            let: { ratedProductId: "$productId" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ["$_id", "$$ratedProductId"] },
+                },
+              },
+            ],
+            as: "productDetails",
+          },
+        },
+        { $unwind: "$productDetails" },
+        { $match: { "productDetails.artisanId": artisanId } },
         {
           $group: {
-            _id: "$artisanId",
-            totalRatingSum: { $sum: "$totalRating" },
-            totalRatings: { $sum: "$numRatings" }
-          }
-        }
+            _id: "$productDetails.artisanId",
+            totalRatingSum: { $sum: "$rating" },
+            totalRatings: { $sum: 1 },
+          },
+        },
       ])
       .toArray();
 
