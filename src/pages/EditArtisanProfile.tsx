@@ -81,12 +81,14 @@ export default function EditArtisanProfile() {
 
       if (profile.avatarFile) {
         const formData = new FormData();
-        formData.append("file", profile.avatarFile);
+        formData.append("image", profile.avatarFile);
 
         const uploadRes = await fetch("http://localhost:3000/api/upload", {
           method: "POST",
           body: formData,
         });
+
+        if (!uploadRes.ok) throw new Error("Upload failed");
 
         const uploadData = await uploadRes.json();
         avatarUrl = uploadData.url;
@@ -96,6 +98,7 @@ export default function EditArtisanProfile() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          userId: user?.id,
           name: profile.name,
           bio: profile.bio,
           location: profile.location,
