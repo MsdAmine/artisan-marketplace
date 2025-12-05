@@ -31,7 +31,7 @@ interface ArtisanProfileData {
     _id: string;
     name: string;
     avatar: string;
-    location: string;
+    location: string;   
     bio: string;
     email?: string;
     phone?: string;
