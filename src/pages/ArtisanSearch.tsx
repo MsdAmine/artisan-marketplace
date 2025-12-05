@@ -63,10 +63,12 @@ export default function ArtisanSearch() {
   const hasSearchQuery = searchParams.get("q");
   const isViewingAll = searchParams.get("view") === "all";
   const shouldShowResults = Boolean(hasSearchQuery) || isViewingAll;
-  const resultTitle = isViewingAll ? "Tous les artisans" : "Résultats de recherche";
-  const resultSubtitle = `${results.length} artisan${results.length > 1 ? "s" : ""} trouvé${
+  const resultTitle = isViewingAll
+    ? "Tous les artisans"
+    : "Résultats de recherche";
+  const resultSubtitle = `${results.length} artisan${
     results.length > 1 ? "s" : ""
-  }`;
+  } trouvé${results.length > 1 ? "s" : ""}`;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -114,40 +116,6 @@ export default function ArtisanSearch() {
                       </Button>
                     </div>
                   </div>
-
-                  {/* Quick Suggestions */}
-                  <div className="flex flex-wrap gap-2 justify-center pt-2">
-                    <span className="text-sm text-muted-foreground">
-                      Suggestions :
-                    </span>
-                    {["Tapis", "Poterie", "Bijoux", "Marrakech", "Fès"].map(
-                      (tag) => (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => {
-                            setQuery(tag);
-                            setSearchParams({ q: tag });
-                          }}
-                          className="text-sm px-3 py-1 rounded-full bg-muted hover:bg-muted/80 transition-colors"
-                        >
-                          {tag}
-                        </button>
-                      )
-                    )}
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="rounded-apple"
-                      onClick={() => {
-                        setQuery("");
-                        setSearchParams({ view: "all" });
-                      }}
-                    >
-                      Voir tous les artisans
-                    </Button>
-                  </div>
                 </form>
               </CardContent>
             </Card>
@@ -190,14 +158,17 @@ export default function ArtisanSearch() {
                 Aucun artisan trouvé
               </h3>
               <p className="text-muted-foreground mb-6">
-                {isViewingAll
-                  ? "Nous n'avons pas encore d'artisans à afficher."
-                  : (
-                      <>
-                        Aucun résultat pour "
-                        <span className="font-semibold">{searchParams.get("q")}</span>"
-                      </>
-                    )}
+                {isViewingAll ? (
+                  "Nous n'avons pas encore d'artisans à afficher."
+                ) : (
+                  <>
+                    Aucun résultat pour "
+                    <span className="font-semibold">
+                      {searchParams.get("q")}
+                    </span>
+                    "
+                  </>
+                )}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
