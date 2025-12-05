@@ -52,7 +52,7 @@ export default function ArtisanProfile() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, loading: authLoading } = useAuth();
 
   const [profile, setProfile] = useState<ArtisanProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +75,7 @@ export default function ArtisanProfile() {
   async function fetchProfile() {
     try {
       setError(null);
+      setLoading(true);
       const query = currentUser ? `?userId=${currentUser.id}` : "";
       const res = await fetch(
         new URL(`/api/artisans/${id}/profile${query}`, apiBaseUrl).toString()
@@ -110,10 +111,12 @@ export default function ArtisanProfile() {
       return;
     }
 
-    if (currentUser.id === profile?.artisan._id) return; // prevent self-follow
+    if (!profile) return;
+
+    if (currentUser.id === profile.artisan._id) return; // prevent self-follow
 
     setFollowLoading(true);
-    const action = profile!.stats.isFollowing ? "unfollow" : "follow";
+    const action = profile.stats.isFollowing ? "unfollow" : "follow";
 
     try {
       await fetch(
@@ -148,7 +151,7 @@ export default function ArtisanProfile() {
   // -----------------------------
   //  LOADING UI
   // -----------------------------
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
