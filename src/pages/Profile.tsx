@@ -517,26 +517,6 @@ export default function Profile() {
                   Ajoutez une première adresse lors de votre prochaine commande.
                 </p>
               )}
-              {additionalAddresses.map((address, idx) => (
-                <div key={idx} className="flex gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                    <Home className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">Adresse #{idx + 1}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {[address.street, address.postalCode, address.city]
-                        .filter(Boolean)
-                        .join(", ") || "Adresse partielle"}
-                    </p>
-                    {address.country && (
-                      <p className="text-sm text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-4 w-4" /> {address.country}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
             </CardContent>
           </Card>
         </div>

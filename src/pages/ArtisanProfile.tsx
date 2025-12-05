@@ -247,7 +247,7 @@ export default function ArtisanProfile() {
 
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-3">
                         <span className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" /> {artisan.location}
+                          <MapPin className="h-4 w-4" /> {artisan.location || "Indéterminée"}
                         </span>
                         <span className="flex items-center gap-2">
                           <Users className="h-4 w-4" />
