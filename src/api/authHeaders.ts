@@ -1,11 +1,4 @@
-export type StoredAuth = {
-  token?: string;
-  user?: {
-    id?: string;
-    email?: string;
-    role?: string;
-  };
-};
+import type { StoredAuth } from "@/types/auth";
 
 export function readStoredAuth(): StoredAuth | null {
   const raw = localStorage.getItem("auth");

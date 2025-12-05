@@ -3,11 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { API_BASE } from "@/api/client";
 import { authHeaders, readStoredAuth } from "@/api/authHeaders";
 
-type User = {
-  id: string;
-  email: string;
-  role: "customer" | "artisan" | "admin";
-};
+import type { User } from "@/types/auth";
 
 type AuthContextType = {
   user: User | null;
