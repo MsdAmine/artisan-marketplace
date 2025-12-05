@@ -240,7 +240,6 @@ export default function Profile() {
     } catch (err) {
       console.error("Failed to update profile", err);
       toast({
-        variant: "destructive",
         title: "Mise à jour impossible",
         description: "Veuillez vérifier vos informations et réessayer.",
       });
