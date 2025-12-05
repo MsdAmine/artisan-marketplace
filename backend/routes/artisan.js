@@ -29,26 +29,25 @@ router.get("/search", async (req, res) => {
     const query = String(req.query.q || "").trim();
     const currentUserId = getCurrentUserId(req);
 
-    if (!query) {
-      return res.status(400).json({ error: "Missing search query" });
-    }
-
     const db = await connectMongo();
+
+    const baseFilter = { role: "artisan" };
+    const searchFilter = query
+      ? { name: { $regex: query, $options: "i" } }
+      : {};
 
     const results = await db
       .collection("users")
       .find(
-        {
-          role: "artisan",
-          name: { $regex: query, $options: "i" },
-        },
+        { ...baseFilter, ...searchFilter },
         {
           projection: {
             password: 0,
           },
         }
       )
-      .limit(20)
+      .limit(query ? 20 : 50)
+      .sort({ name: 1 })
       .toArray();
 
     const driver = req.neo4jDriver;
