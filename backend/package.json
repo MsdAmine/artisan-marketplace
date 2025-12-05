@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "reset:seed": "node resetAndSeed.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -17,8 +16,7 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.0.0",
-    "neo4j-driver": "^6.0.1",
-    "redis": "^5.10.0"
+    "neo4j-driver": "^6.0.1"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.1"
