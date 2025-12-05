@@ -52,7 +52,8 @@ export default function ArtisanDashboard() {
     setLoading(true);
     try {
       const res = await fetch(
-        `http://localhost:3000/api/artisans/products/${user.id}`
+        
+        `http://localhost:3000/api/products/by-artisan/${user.id}`
       );
       const data = await res.json();
 
