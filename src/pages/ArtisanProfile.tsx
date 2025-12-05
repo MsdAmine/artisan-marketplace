@@ -59,6 +59,10 @@ export default function ArtisanProfile() {
   const [followLoading, setFollowLoading] = useState(false);
   const [authRequired, setAuthRequired] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [error, setError] = useState<string | null>(null);
+
+  const apiBaseUrl =
+    import.meta.env.VITE_API_URL?.replace(/\/$/, "") || window.location.origin;
 
   // -----------------------------
   //  LOAD ARTISAN PROFILE
@@ -66,20 +70,32 @@ export default function ArtisanProfile() {
   useEffect(() => {
     if (!id) return;
     fetchProfile();
-  }, [id, currentUser]);
+  }, [id, currentUser, apiBaseUrl]);
 
   async function fetchProfile() {
     try {
+      setError(null);
       const query = currentUser ? `?userId=${currentUser.id}` : "";
-
       const res = await fetch(
-        `http://localhost:3000/api/artisans/${id}/profile${query}`
+        new URL(`/api/artisans/${id}/profile${query}`, apiBaseUrl).toString()
       );
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch profile (status ${res.status})`);
+      }
+
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error("Unexpected response format from profile endpoint");
+      }
 
       const data = await res.json();
       setProfile(data);
     } catch (err) {
       console.error("Error fetching profile:", err);
+      setError(
+        "Impossible de charger le profil de l'artisan pour le moment. Veuillez réessayer plus tard."
+      );
     } finally {
       setLoading(false);
     }
@@ -100,11 +116,14 @@ export default function ArtisanProfile() {
     const action = profile!.stats.isFollowing ? "unfollow" : "follow";
 
     try {
-      await fetch(`http://localhost:3000/api/artisans/${id}/${action}`, {
+      await fetch(
+        new URL(`/api/artisans/${id}/${action}`, apiBaseUrl).toString(),
+        {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: currentUser.id }),
-      });
+        }
+      );
 
       setProfile((prev) => {
         if (!prev) return null;
@@ -136,6 +155,23 @@ export default function ArtisanProfile() {
           <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
           <p className="text-sm text-muted-foreground">Chargement...</p>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <Card>
+          <CardContent className="text-center p-10 space-y-4">
+            <Package className="h-16 w-16 text-muted-foreground mx-auto" />
+            <h2 className="text-2xl font-semibold">Profil indisponible</h2>
+            <p className="text-muted-foreground max-w-md">{error}</p>
+            <Button variant="outline" onClick={() => navigate(-1)}>
+              Retour
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
