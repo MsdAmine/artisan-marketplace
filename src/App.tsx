@@ -12,6 +12,7 @@ import Signup from "@/pages/auth/Signup";
 import ArtisanProfile from "@/pages/ArtisanProfile";
 import EditArtisanProfile from "@/pages/EditArtisanProfile";
 import Profile from "@/pages/Profile";
+import ArtisanSearch from "@/pages/ArtisanSearch";
 
 export default function App() {
   const location = useLocation();
@@ -35,6 +36,14 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
 
           <Route path="/artisan/:id" element={<ArtisanProfile />} />
+          <Route
+            path="/artisans/search"
+            element={
+              <ProtectedRoute>
+                <ArtisanSearch />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/artisan/:id/edit"
             element={

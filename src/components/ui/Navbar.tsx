@@ -9,7 +9,7 @@ import {
   Search,
 } from "lucide-react";
 // FIX: Explicitly importing React to resolve the 'Cannot find namespace JSX' error
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 // Assuming getCart and useAuth are correctly defined elsewhere
@@ -21,6 +21,7 @@ import {
   markNotificationRead,
 } from "@/api/notifications";
 import type { Notification } from "@/types/notifications";
+import { Input } from "./input";
 
 /** Define the required structure for a navigation link */
 interface NavLink {
@@ -46,6 +47,9 @@ export default function Navbar() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   async function loadCartCount() {
     try {
@@ -63,6 +67,12 @@ export default function Navbar() {
   useEffect(() => {
     loadCartCount();
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (searchOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [searchOpen]);
 
   useEffect(() => {
     if (!user) {
@@ -112,6 +122,19 @@ export default function Navbar() {
     } catch (err) {
       console.error("Failed to mark notifications as read", err);
     }
+  }
+
+  function submitSearch() {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) return;
+
+    navigate(`/artisans/search?q=${encodeURIComponent(trimmed)}`);
+    setSearchOpen(false);
+  }
+
+  function handleSearchSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    submitSearch();
   }
 
   const isActive = (path: string) =>
@@ -198,15 +221,43 @@ export default function Navbar() {
           </div>
           {/* RIGHT SIDE */}{" "}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Search */}{" "}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-full hover:bg-muted"
-              title="Rechercher"
-            >
-              <Search className="h-4 w-4" />{" "}
-            </Button>
+            {/* Search */}
+            <div className="relative">
+              <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
+                {searchOpen && (
+                  <Input
+                    ref={searchInputRef}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Rechercher un artisan"
+                    className="w-52 sm:w-64 pr-10"
+                    onBlur={() => {
+                      if (!searchTerm) {
+                        setSearchOpen(false);
+                      }
+                    }}
+                  />
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-9 w-9 rounded-full hover:bg-muted ${
+                    searchOpen ? "bg-muted" : ""
+                  }`}
+                  title="Rechercher un artisan"
+                  type={searchOpen ? "submit" : "button"}
+                  onClick={() => {
+                    if (searchOpen && searchTerm.trim()) {
+                      submitSearch();
+                      return;
+                    }
+                    setSearchOpen((open) => !open);
+                  }}
+                >
+                  <Search className="h-4 w-4" />
+                </Button>
+              </form>
+            </div>
             {/* Notifications */}{" "}
             <div className="relative">
               <Button
