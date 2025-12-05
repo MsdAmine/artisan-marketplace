@@ -7,7 +7,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -18,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import {
   Package,
   Clock,
@@ -50,10 +50,8 @@ export default function MyOrders() {
   const [error, setError] = useState<string | null>(null);
   const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
   const [submittingRating, setSubmittingRating] = useState(false);
-  const [ratingMessage, setRatingMessage] = useState<string | null>(null);
-  const [ratingMessageType, setRatingMessageType] = useState<
-    "info" | "error" | null
-  >(null);
+  const [submittedRatings, setSubmittedRatings] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   const buildItemRatingKey = (
     orderId: string,
@@ -94,6 +92,7 @@ export default function MyOrders() {
         if (!rating) return null;
 
         return {
+          key,
           orderId: order._id,
           orderItemId: item._id,
           productId: item.productId || item.product?._id || "",
@@ -105,6 +104,7 @@ export default function MyOrders() {
       .filter((item) => item.productId)
       .filter(
         (item): item is {
+          key: string;
           orderId: string;
           orderItemId: string;
           productId: string;
@@ -116,19 +116,20 @@ export default function MyOrders() {
   };
 
   const handleSubmitRatings = async (order: any) => {
-    const ratedItems = getRatedItemsForOrder(order);
+    const ratedItems = getRatedItemsForOrder(order).filter(
+      (item) => !submittedRatings.has(item.key)
+    );
 
     if (!ratedItems.length) {
-      setRatingMessage(
-        "Sélectionnez une note pour au moins un produit avant de l'enregistrer."
-      );
-      setRatingMessageType("error");
+      toast({
+        title: "Notation déjà envoyée",
+        description:
+          "Ces produits sont déjà notés ou aucune nouvelle note n'a été sélectionnée.",
+      });
       return;
     }
 
     setSubmittingRating(true);
-    setRatingMessage(null);
-    setRatingMessageType(null);
 
     try {
       await submitProductRatings(
@@ -140,14 +141,24 @@ export default function MyOrders() {
         }))
       );
 
-      setRatingMessage("Notes enregistrées avec succès.");
-      setRatingMessageType("info");
+      toast({
+        title: "Notation enregistrée",
+        description: "Notes enregistrées avec succès.",
+      });
+
+      setSubmittedRatings((prev) => {
+        const next = new Set(prev);
+        ratedItems.forEach((item) => next.add(item.key));
+        return next;
+      });
     } catch (err: any) {
       console.error("Erreur lors de l'enregistrement des notes", err);
-      setRatingMessage(
-        err?.message || "Impossible d'enregistrer vos notes pour le moment."
-      );
-      setRatingMessageType("error");
+      toast({
+        title: "Échec de l'enregistrement",
+        description:
+          err?.message || "Impossible d'enregistrer vos notes pour le moment.",
+        variant: "destructive",
+      });
     } finally {
       setSubmittingRating(false);
     }
@@ -170,12 +181,6 @@ export default function MyOrders() {
   useEffect(() => {
     loadOrders();
   }, []);
-
-  useEffect(() => {
-    setRatingMessage(null);
-    setRatingMessageType(null);
-    setSubmittingRating(false);
-  }, [selectedOrder]);
 
   // Filter orders based on status
   const filteredOrders = orders.filter((order) => {
@@ -696,45 +701,80 @@ export default function MyOrders() {
                                   <p className="text-xs text-muted-foreground mb-1">
                                     Notez ce produit
                                   </p>
-                                  <div className="flex gap-1 text-muted-foreground">
-                                    {[...Array(5)].map((_, starIndex) => {
-                                      const starValue = starIndex + 1;
-                                      const itemKey = buildItemRatingKey(
+                                  <div className="flex items-center gap-3 text-muted-foreground flex-wrap">
+                                    <div className="flex gap-1">
+                                      {[...Array(5)].map((_, starIndex) => {
+                                        const starValue = starIndex + 1;
+                                        const itemKey = buildItemRatingKey(
+                                          selectedOrder._id,
+                                          item,
+                                          index
+                                        );
+                                        const isActive =
+                                          itemRatings[itemKey] >= starValue;
+
+                                        const isRated = submittedRatings.has(itemKey);
+
+                                        return (
+                                          <button
+                                            type="button"
+                                            key={starIndex}
+                                            onClick={() =>
+                                              !isRated &&
+                                              handleRateItem(
+                                                selectedOrder._id,
+                                                item,
+                                                index,
+                                                starValue
+                                              )
+                                            }
+                                            className={`transition-colors ${
+                                              isActive
+                                                ? "text-amber-500"
+                                                : "text-muted-foreground hover:text-amber-400"
+                                            } ${isRated ? "cursor-not-allowed opacity-60" : ""}`}
+                                            aria-label={`Noter ${starValue} étoile${
+                                              starValue === 1 ? "" : "s"
+                                            } pour ${
+                                              item.productName || "ce produit"
+                                            }`}
+                                            aria-pressed={isActive}
+                                            disabled={isRated}
+                                            aria-disabled={isRated}
+                                          >
+                                            <Star className="h-4 w-4 fill-current" />
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                    {submittedRatings.has(
+                                      buildItemRatingKey(
                                         selectedOrder._id,
                                         item,
                                         index
-                                      );
-                                      const isActive =
-                                        itemRatings[itemKey] >= starValue;
-
-                                      return (
-                                        <button
-                                          type="button"
-                                          key={starIndex}
-                                          onClick={() =>
-                                            handleRateItem(
-                                              selectedOrder._id,
-                                              item,
-                                              index,
-                                              starValue
-                                            )
-                                          }
-                                          className={`transition-colors ${
-                                            isActive
-                                              ? "text-amber-500"
-                                              : "text-muted-foreground hover:text-amber-400"
-                                          }`}
-                                          aria-label={`Noter ${starValue} étoile${
-                                            starValue === 1 ? "" : "s"
-                                          } pour ${
-                                            item.productName || "ce produit"
-                                          }`}
-                                          aria-pressed={isActive}
-                                        >
-                                          <Star className="h-4 w-4 fill-current" />
-                                        </button>
-                                      );
-                                    })}
+                                      )
+                                    ) ? (
+                                      <Button
+                                        size="sm"
+                                        className="rounded-apple"
+                                        variant="secondary"
+                                        disabled
+                                      >
+                                        Déjà noté
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        className="rounded-apple"
+                                        variant="default"
+                                        onClick={() => handleSubmitRatings(selectedOrder)}
+                                        disabled={submittingRating}
+                                      >
+                                        {submittingRating
+                                          ? "Enregistrement..."
+                                          : "Noter"}
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -779,38 +819,6 @@ export default function MyOrders() {
                     </div>
                   </div>
                 </CardContent>
-                {selectedOrder.status === "delivered" && (
-                  <CardFooter className="flex-col items-start gap-3 border-t border-border">
-                    <div className="flex items-center gap-3 w-full flex-wrap">
-                      <Button
-                        className="rounded-apple"
-                        variant="default"
-                        onClick={() => handleSubmitRatings(selectedOrder)}
-                        disabled={submittingRating}
-                      >
-                        {submittingRating
-                          ? "Enregistrement..."
-                          : "Enregistrer mes notes"}
-                      </Button>
-                      <p className="text-sm text-muted-foreground">
-                        Astuce stockage : créez une collection "productRatings" avec
-                        userId, productId, orderItemId, rating, orderId et timestamps
-                        pour éviter les doublons et historiser les avis.
-                      </p>
-                    </div>
-                    {ratingMessage && (
-                      <p
-                        className={`text-sm ${
-                          ratingMessageType === "error"
-                            ? "text-red-600"
-                            : "text-emerald-600"
-                        }`}
-                      >
-                        {ratingMessage}
-                      </p>
-                    )}
-                  </CardFooter>
-                )}
               </Card>
 
               {/* Shipping and Payment Info */}
