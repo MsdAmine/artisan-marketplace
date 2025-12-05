@@ -95,6 +95,8 @@ export default function EditArtisanProfile() {
 
         if (!uploadRes.ok) throw new Error("Upload failed");
 
+        if (!uploadRes.ok) throw new Error("Upload failed");
+
         const uploadData = await uploadRes.json();
         avatarUrl = uploadData.url;
       } // --- Send update request ---
