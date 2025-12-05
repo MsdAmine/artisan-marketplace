@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 import {
-  Badge,
   Calendar,
   CheckCircle,
   Clock,
@@ -15,6 +14,8 @@ import {
   ShoppingBag,
   User,
 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 
 import { getOrders } from "@/api/orders";
 import { getCurrentUser } from "@/api/users";
@@ -251,7 +252,7 @@ export default function Profile() {
             <CardTitle className="text-3xl">
               {stats.totalSpent.toLocaleString("fr-FR", {
                 style: "currency",
-                currency: "EUR",
+                currency: "MAD",
               })}
             </CardTitle>
           </CardHeader>
