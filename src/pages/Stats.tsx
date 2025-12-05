@@ -1,13 +1,31 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "../api/client";
 
+type SalesStat = {
+  artisanId: string;
+  artisanName: string;
+  totalSales: number;
+  totalOrders: number;
+};
+
 export default function Stats() {
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState<SalesStat[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiGet("/stats/sales-by-artisan")
-      .then(setStats)
+      .then((data) =>
+        setStats(
+          Array.isArray(data)
+            ? data.map((row: any) => ({
+                artisanId: row._id || row.artisanId,
+                artisanName: row.artisanName || row._id || row.artisanId,
+                totalSales: row.totalSales,
+                totalOrders: row.totalOrders,
+              }))
+            : []
+        )
+      )
       .finally(() => setLoading(false));
   }, []);
 

@@ -1,35 +1,6 @@
 // src/api/orders.ts
 import { API_BASE } from "./client";
-
-// Read token from the same place AuthContext uses
-function getToken(): string | null {
-  const stored = localStorage.getItem("auth") || localStorage.getItem("token");
-  if (!stored) return null;
-
-  try {
-    const parsed = JSON.parse(stored);
-    return parsed.token || null;
-  } catch (e) {
-    if (typeof stored === "string") return stored;
-
-    console.error("Failed to parse auth from localStorage", e);
-    return null;
-  }
-}
-
-function authHeaders() {
-  const token = getToken();
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  return headers;
-}
+import { authHeaders } from "./authHeaders";
 
 // ----------------------
 // GET all orders of user

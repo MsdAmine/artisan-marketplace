@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { API_BASE } from "@/api/client";
+import { authHeaders } from "@/api/authHeaders";
 
 export default function EditProductModal({
   open,
@@ -33,18 +35,15 @@ export default function EditProductModal({
 
     const { _id, ...cleanData } = form;
 
-    const res = await fetch(
-      `http://localhost:3000/api/products/${product._id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...cleanData,
-          price: Number(cleanData.price),
-          stock: Number(cleanData.stock),
-        }),
-      }
-    );
+    const res = await fetch(`${API_BASE}/products/${product._id}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        ...cleanData,
+        price: Number(cleanData.price),
+        stock: Number(cleanData.stock),
+      }),
+    });
 
     setLoading(false);
 

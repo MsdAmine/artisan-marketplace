@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { API_ROOT } from "@/api/client";
 import {
   Upload,
   X,
@@ -76,7 +77,7 @@ export default function AddProductModal({
   ];
 
   // Resolve API base url from props or env
-  const baseUrl = apiBaseUrl ?? "";
+  const baseUrl = apiBaseUrl ?? API_ROOT;
 
   useEffect(() => {
     // reset validation errors when the modal is reopened

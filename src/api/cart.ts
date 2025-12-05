@@ -1,29 +1,5 @@
 import { API_BASE } from "./client";
-
-function getToken(): string | null {
-  const stored = localStorage.getItem("auth") || localStorage.getItem("token");
-  if (!stored) return null;
-
-  try {
-    const parsed = JSON.parse(stored);
-    return parsed?.token ?? null;
-  } catch (err) {
-    // If it's not JSON, treat it as the raw token string
-    if (typeof stored === "string") return stored;
-
-    console.error("Failed to parse auth token", err);
-    return null;
-  }
-}
-
-function authHeaders() {
-  const token = getToken();
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-
-  if (token) headers.Authorization = `Bearer ${token}`;
-
-  return headers;
-}
+import { authHeaders } from "./authHeaders";
 
 export async function getCart() {
   const res = await fetch(`${API_BASE}/cart`, {

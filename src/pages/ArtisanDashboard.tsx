@@ -22,6 +22,8 @@ import AddProductModal from "@/components/ui/AddProductModal";
 import EditProductModal from "@/components/ui/EditProductModal";
 import DeleteConfirmModal from "@/components/ui/DeleteConfirmModal";
 import { useAuth } from "@/context/AuthContext";
+import { API_BASE, API_ROOT } from "@/api/client";
+import { authHeaders } from "@/api/authHeaders";
 
 export default function ArtisanDashboard() {
   type ArtisanStats = {
@@ -44,7 +46,7 @@ export default function ArtisanDashboard() {
 
   const lowStockProducts = products.filter((p) => p.stock < 5);
   const outOfStockProducts = products.filter((p) => p.stock === 0);
-  const { user, token } = useAuth();
+  const { user } = useAuth();
 
   async function loadProducts() {
     if (!user) return;
@@ -52,8 +54,7 @@ export default function ArtisanDashboard() {
     setLoading(true);
     try {
       const res = await fetch(
-        
-        `http://localhost:3000/api/products/by-artisan/${user.id}`
+        `${API_BASE}/products/by-artisan/${user.id}`
       );
       const data = await res.json();
 
@@ -76,12 +77,8 @@ export default function ArtisanDashboard() {
     if (!user) return;
 
     try {
-      const res = await fetch("http://localhost:3000/api/stats/artisan", {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
+      const res = await fetch(`${API_BASE}/stats/artisan`, {
+        headers: authHeaders({ includeJson: false, includeUserId: true }),
       });
 
       if (!res.ok) {
@@ -646,7 +643,7 @@ export default function ArtisanDashboard() {
         onClose={() => setOpenAdd(false)}
         onCreated={loadProducts}
         artisanId={user?.id}
-        apiBaseUrl="http://localhost:3000"
+        apiBaseUrl={API_ROOT}
       />
 
       <EditProductModal

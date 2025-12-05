@@ -1,5 +1,7 @@
 // src/api/recommendations.ts
-const BASE = "http://localhost:3000/api";
+import { API_BASE } from "./client";
+
+const BASE = API_BASE;
 
 export async function getRecommendations(userId: string) {
   const res = await fetch(`${BASE}/recommendations/${userId}`);
