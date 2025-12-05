@@ -16,11 +16,16 @@ import {
   Eye,
   Tag
 } from "lucide-react";
+import { useArtisanName } from "@/hooks/useArtisanName";
 
 export default function ProductCard({ p, viewMode = "grid" }: any) {
   const [open, setOpen] = useState(false);
 
-  const artisanName = p.artisan || "artisan local";
+  const fetchedArtisanName = useArtisanName(p.artisanId);
+
+  const artisanName =
+    fetchedArtisanName || p.artisan || "Artisan local";
+  
   const artisanProfilePath = p.artisanId ? `/artisan/${p.artisanId}` : null;
 
   const renderArtisanLink = (
