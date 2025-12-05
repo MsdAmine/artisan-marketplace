@@ -9,10 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import ProductModal from "./ProductModal";
-import { 
-  Package, 
-  Star, 
-  ShoppingCart, 
+import {
+  Package,
+  Star,
   Eye,
   Tag
 } from "lucide-react";

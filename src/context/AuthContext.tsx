@@ -1,5 +1,7 @@
 // src/context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState } from "react";
+import { API_BASE } from "@/api/client";
+import { authHeaders, readStoredAuth } from "@/api/authHeaders";
 
 type User = {
   id: string;
@@ -17,24 +19,18 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const initialAuth = (() => {
-  try {
-    return JSON.parse(localStorage.getItem("auth") || "null");
-  } catch (err) {
-    console.error("Failed to parse auth from storage", err);
-    return null;
-  }
-})();
-
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const initialAuth = JSON.parse(localStorage.getItem("auth") || "null");
+  const storedAuth = readStoredAuth();
 
-  const [user, setUser] = useState<User | null>(initialAuth?.user || null);
-  const [token, setToken] = useState<string | null>(initialAuth?.token || null);
+  const [user, setUser] = useState<User | null>(storedAuth?.user || null);
+  const [token, setToken] = useState<string | null>(storedAuth?.token || null);
   const [loading, setLoading] = useState(false); // no delay
 
   useEffect(() => {
     if (!token) return;
+
+    const storedUserId = readStoredAuth()?.user?.id || user?.id;
+    if (!storedUserId) return;
 
     let cancelled = false;
 
@@ -42,20 +38,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
 
       try {
-        const res = await fetch("http://localhost:3000/api/users/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+        const res = await fetch(`${API_BASE}/users/me`, {
+          headers: authHeaders({ includeJson: false, includeUserId: true }),
         });
 
-        if (!res.ok) return;
+        if (!res.ok) {
+          if (!cancelled) setLoading(false);
+          return;
+        }
 
         const data = await res.json();
 
         if (cancelled) return;
 
         setUser({
-          id: data.id,
+          id: data.id || data._id,
           email: data.email,
           role: data.role,
         });

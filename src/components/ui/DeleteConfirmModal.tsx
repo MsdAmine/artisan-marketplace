@@ -5,13 +5,16 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { API_BASE } from "@/api/client";
+import { authHeaders } from "@/api/authHeaders";
 
 export default function DeleteConfirmModal({ open, onClose, product, onDeleted }: any) {
   if (!product) return null;
 
   async function deleteProduct() {
-    const res = await fetch(`http://localhost:3000/api/artisans/${product._id}`, {
-      method: "DELETE"
+    const res = await fetch(`${API_BASE}/artisans/${product._id}`, {
+      method: "DELETE",
+      headers: authHeaders({ includeJson: false }),
     });
 
     if (res.ok) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ProductCard from "@/components/ui/ProductCard";
+import { API_BASE } from "@/api/client";
 import {
   Filter,
   Grid3x3,
@@ -72,7 +73,7 @@ export default function Catalog() {
   // --- EFFECT 1: Load all MongoDB Products ---
   useEffect(() => {
     setLoading(true);
-    fetch("http://localhost:3000/api/products")
+    fetch(`${API_BASE}/products`)
       .then((res) => res.json())
       .then((data: Product[]) => {
         setProducts(data);
@@ -94,7 +95,7 @@ export default function Catalog() {
         const { user } = JSON.parse(saved);
 
         const res = await fetch(
-          `http://localhost:3000/api/recommendations/${user.id}`
+          `${API_BASE}/recommendations/${user.id}`
         );
 
         if (!res.ok) {
