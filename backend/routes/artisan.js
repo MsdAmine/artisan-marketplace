@@ -22,6 +22,42 @@ function getCurrentUserId(req) {
 }
 
 // =======================================================
+// SEARCH Artisans → /api/artisans/search?q=Name
+// =======================================================
+router.get("/search", async (req, res) => {
+  try {
+    const query = String(req.query.q || "").trim();
+
+    if (!query) {
+      return res.status(400).json({ error: "Missing search query" });
+    }
+
+    const db = await connectMongo();
+
+    const results = await db
+      .collection("users")
+      .find(
+        {
+          role: "artisan",
+          name: { $regex: query, $options: "i" },
+        },
+        {
+          projection: {
+            password: 0,
+          },
+        }
+      )
+      .limit(20)
+      .toArray();
+
+    res.json({ artisans: results });
+  } catch (err) {
+    console.error("Error searching artisans:", err);
+    res.status(500).json({ error: "Server error searching artisans" });
+  }
+});
+
+// =======================================================
 // GET Artisan Profile → /api/artisans/:artisanId/profile
 // =======================================================
 router.get("/:artisanId/profile", async (req, res) => {
