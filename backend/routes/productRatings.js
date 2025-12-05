@@ -6,6 +6,39 @@ const { connectMongo } = require("../db/mongo");
 const auth = require("../middleware/auth");
 
 // -------------------------------
+// GET /api/product-ratings
+// Fetch ratings submitted by the authenticated user (optionally by order)
+// -------------------------------
+router.get("/", auth, async (req, res) => {
+  try {
+    const userId = req.user?.id;
+    const { orderId } = req.query || {};
+
+    if (!userId) {
+      return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    const filter = { userId: new ObjectId(userId) };
+
+    if (orderId) {
+      if (!ObjectId.isValid(orderId)) {
+        return res.status(400).json({ error: "Invalid orderId" });
+      }
+
+      filter.orderId = new ObjectId(orderId);
+    }
+
+    const db = await connectMongo();
+    const ratings = await db.collection("productRatings").find(filter).toArray();
+
+    res.json(ratings);
+  } catch (err) {
+    console.error("GET PRODUCT RATINGS ERROR", err);
+    res.status(500).json({ error: "Failed to fetch product ratings" });
+  }
+});
+
+// -------------------------------
 // POST /api/product-ratings
 // Persist user ratings for purchased products
 // -------------------------------
