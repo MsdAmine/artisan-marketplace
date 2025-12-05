@@ -50,8 +50,9 @@ export default function MyOrders() {
   const [error, setError] = useState<string | null>(null);
   const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
   const [submittingRating, setSubmittingRating] = useState(false);
-  
-  const [submittedRatings, setSubmittedRatings] = useState<Set<string>>(new Set());
+  const [submittedRatings, setSubmittedRatings] = useState<Set<string>>(
+    new Set()
+  );
   const { toast } = useToast();
 
   const buildItemRatingKey = (orderId: string, item: any, index: number) => {
@@ -103,6 +104,7 @@ export default function MyOrders() {
         (
           item
         ): item is {
+          key: string;
           orderId: string;
           orderItemId: string;
           productId: string;
@@ -120,15 +122,14 @@ export default function MyOrders() {
 
     if (!ratedItems.length) {
       toast({
-        title: "Aucune note sélectionnée",
+        title: "Notation déjà envoyée",
         description:
-          "Sélectionnez une note pour au moins un produit avant de l'enregistrer.",
+          "Ces produits sont déjà notés ou aucune nouvelle note n'a été sélectionnée.",
       });
       return;
     }
 
     setSubmittingRating(true);
-
     try {
       await submitProductRatings(
         order._id,
@@ -138,10 +139,15 @@ export default function MyOrders() {
           orderItemId: item.orderItemId || null,
         }))
       );
-
       toast({
         title: "Notation enregistrée",
         description: "Notes enregistrées avec succès.",
+      });
+
+      setSubmittedRatings((prev) => {
+        const next = new Set(prev);
+        ratedItems.forEach((item) => next.add(item.key));
+        return next;
       });
     } catch (err: any) {
       console.error("Erreur lors de l'enregistrement des notes", err);
@@ -172,7 +178,6 @@ export default function MyOrders() {
   useEffect(() => {
     loadOrders();
   }, []);
-
   // Filter orders based on status
   const filteredOrders = orders.filter((order) => {
     if (activeFilter === "all") return true;
@@ -704,11 +709,15 @@ export default function MyOrders() {
                                         const isActive =
                                           itemRatings[itemKey] >= starValue;
 
+                                        const isRated =
+                                          submittedRatings.has(itemKey);
+
                                         return (
                                           <button
                                             type="button"
                                             key={starIndex}
                                             onClick={() =>
+                                              !isRated &&
                                               handleRateItem(
                                                 selectedOrder._id,
                                                 item,
@@ -720,6 +729,10 @@ export default function MyOrders() {
                                               isActive
                                                 ? "text-amber-500"
                                                 : "text-muted-foreground hover:text-amber-400"
+                                            } ${
+                                              isRated
+                                                ? "cursor-not-allowed opacity-60"
+                                                : ""
                                             }`}
                                             aria-label={`Noter ${starValue} étoile${
                                               starValue === 1 ? "" : "s"
@@ -727,25 +740,44 @@ export default function MyOrders() {
                                               item.productName || "ce produit"
                                             }`}
                                             aria-pressed={isActive}
+                                            disabled={isRated}
+                                            aria-disabled={isRated}
                                           >
                                             <Star className="h-4 w-4 fill-current" />
                                           </button>
                                         );
                                       })}
                                     </div>
-                                    <Button
-                                      size="sm"
-                                      className="rounded-apple"
-                                      variant="default"
-                                      onClick={() =>
-                                        handleSubmitRatings(selectedOrder)
-                                      }
-                                      disabled={submittingRating}
-                                    >
-                                      {submittingRating
-                                        ? "Enregistrement..."
-                                        : "Noter"}
-                                    </Button>
+                                    {submittedRatings.has(
+                                      buildItemRatingKey(
+                                        selectedOrder._id,
+                                        item,
+                                        index
+                                      )
+                                    ) ? (
+                                      <Button
+                                        size="sm"
+                                        className="rounded-apple"
+                                        variant="secondary"
+                                        disabled
+                                      >
+                                        Déjà noté
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        size="sm"
+                                        className="rounded-apple"
+                                        variant="default"
+                                        onClick={() =>
+                                          handleSubmitRatings(selectedOrder)
+                                        }
+                                        disabled={submittingRating}
+                                      >
+                                        {submittingRating
+                                          ? "Enregistrement..."
+                                          : "Noter"}
+                                      </Button>
+                                    )}
                                   </div>
                                 </div>
                               )}
