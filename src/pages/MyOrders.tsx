@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { getOrders } from "@/api/orders";
-import { submitProductRatings } from "@/api/productRatings";
+import {
+  getProductRatings,
+  submitProductRatings,
+  type ProductRatingRecord,
+} from "@/api/productRatings";
 import {
   Card,
   CardContent,
@@ -161,12 +165,51 @@ export default function MyOrders() {
     }
   };
 
+  const syncExistingRatings = (
+    ordersData: any[],
+    ratings: ProductRatingRecord[]
+  ) => {
+    const ratingMap: Record<string, number> = {};
+    const submitted = new Set<string>();
+
+    ordersData.forEach((order) => {
+      (order.items || []).forEach((item: any, index: number) => {
+        const matchingRating = ratings.find((rating) => {
+          if (rating.orderId?.toString() !== order._id?.toString()) return false;
+
+          if (rating.orderItemId && item._id) {
+            return rating.orderItemId.toString() === item._id.toString();
+          }
+
+          return (
+            rating.productId?.toString() ===
+            (item.productId || item.product?._id || "").toString()
+          );
+        });
+
+        if (matchingRating) {
+          const key = buildItemRatingKey(order._id, item, index);
+          ratingMap[key] = matchingRating.rating;
+          submitted.add(key);
+        }
+      });
+    });
+
+    setItemRatings(ratingMap);
+    setSubmittedRatings(submitted);
+  };
+
   async function loadOrders() {
     setLoading(true);
     setError(null);
     try {
-      const data = await getOrders();
+      const [data, existingRatings] = await Promise.all([
+        getOrders(),
+        getProductRatings(),
+      ]);
+
       setOrders(data);
+      syncExistingRatings(data, existingRatings);
     } catch (error) {
       console.error("Failed to load orders:", error);
       setError("Impossible de charger vos commandes. Veuillez réessayer.");
