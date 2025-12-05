@@ -3,13 +3,15 @@ import { API_BASE } from "./client";
 
 // Read token from the same place AuthContext uses
 function getToken(): string | null {
-  const stored = localStorage.getItem("auth");
+  const stored = localStorage.getItem("auth") || localStorage.getItem("token");
   if (!stored) return null;
 
   try {
     const parsed = JSON.parse(stored);
     return parsed.token || null;
   } catch (e) {
+    if (typeof stored === "string") return stored;
+
     console.error("Failed to parse auth from localStorage", e);
     return null;
   }
