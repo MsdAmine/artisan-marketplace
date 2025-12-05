@@ -24,6 +24,19 @@ export default function EditArtisanProfile() {
     return user.id === id && user.role === "artisan";
   }, [id, user]);
 
+  // Redirect if trying to edit someone else's profile
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!canEdit) {
+      setAccessDenied(true);
+      setLoading(false);
+      return;
+    }
+
+    fetchProfile();
+  }, [authLoading, canEdit, fetchProfile]);
+
   const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch(
@@ -38,19 +51,6 @@ export default function EditArtisanProfile() {
       setLoading(false);
     }
   }, [id]);
-
-  // Redirect if trying to edit someone else's profile
-  useEffect(() => {
-    if (authLoading) return;
-
-    if (!canEdit) {
-      setAccessDenied(true);
-      setLoading(false);
-      return;
-    }
-
-    fetchProfile();
-  }, [authLoading, canEdit, fetchProfile]);
 
   function handleAvatarChange(e: any) {
     const file = e.target.files[0];
