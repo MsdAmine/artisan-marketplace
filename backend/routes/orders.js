@@ -106,6 +106,7 @@ router.post("/", auth, async (req, res) => {
       const quantity = item.quantity;
 
       return {
+        _id: new ObjectId(),
         productId: item.productId,
         productName: product?.name || item.productName,
         image: product?.image || item.image,
