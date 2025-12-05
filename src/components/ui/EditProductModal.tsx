@@ -18,9 +18,9 @@ export default function EditProductModal({
   const [form, setForm] = useState(product || {});
   const [loading, setLoading] = useState(false);
 
-useEffect(() => {
-  setForm(product || {});
-}, [product]);
+  useEffect(() => {
+    setForm(product || {});
+  }, [product]);
 
   if (!product) return null;
 
@@ -29,31 +29,34 @@ useEffect(() => {
   }
 
   async function updateProduct() {
-  setLoading(true);
+    setLoading(true);
 
-  const { _id, ...cleanData } = form; // remove _id from body
+    const { _id, ...cleanData } = form;
 
-  const res = await fetch(`http://localhost:3000/api/artisans/${product._id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      ...cleanData,
-      price: Number(cleanData.price),
-      stock: Number(cleanData.stock)
-    })
-  });
+    const res = await fetch(
+      `http://localhost:3000/api/products/${product._id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...cleanData,
+          price: Number(cleanData.price),
+          stock: Number(cleanData.stock),
+        }),
+      }
+    );
 
-  setLoading(false);
+    setLoading(false);
 
-  if (res.ok) {
-    onUpdated();
-    onClose();
-  } else {
-    const errorText = await res.text();
-    console.error("Update error response:", errorText);
-    alert("Erreur lors de la modification");
+    if (res.ok) {
+      onUpdated();
+      onClose();
+    } else {
+      const errorText = await res.text();
+      console.error("Update error response:", errorText);
+      alert("Erreur lors de la modification");
+    }
   }
-}
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
