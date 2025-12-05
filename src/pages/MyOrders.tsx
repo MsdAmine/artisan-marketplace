@@ -87,6 +87,7 @@ export default function MyOrders() {
         if (!rating) return null;
 
         return {
+          key,
           orderId: order._id,
           orderItemId: item._id,
           productId: item.productId || item.product?._id || "",
@@ -111,7 +112,9 @@ export default function MyOrders() {
   };
 
   const handleSubmitRatings = async (order: any) => {
-    const ratedItems = getRatedItemsForOrder(order);
+    const ratedItems = getRatedItemsForOrder(order).filter(
+      (item) => !submittedRatings.has(item.key)
+    );
 
     if (!ratedItems.length) {
       toast({
