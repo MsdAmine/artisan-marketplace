@@ -50,6 +50,8 @@ export default function MyOrders() {
   const [error, setError] = useState<string | null>(null);
   const [itemRatings, setItemRatings] = useState<Record<string, number>>({});
   const [submittingRating, setSubmittingRating] = useState(false);
+  
+  const [submittedRatings, setSubmittedRatings] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const buildItemRatingKey = (orderId: string, item: any, index: number) => {
