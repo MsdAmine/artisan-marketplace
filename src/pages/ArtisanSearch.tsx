@@ -21,12 +21,6 @@ import { Badge } from "@/components/ui/badge";
 import type { ArtisanSummary } from "@/api/artisans";
 import { searchArtisans } from "@/api/artisans";
 
-// Extended interface for featured artisans
-interface FeaturedArtisan extends ArtisanSummary {
-  followers?: number;
-  rating?: number;
-}
-
 export default function ArtisanSearch() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
@@ -63,37 +57,6 @@ export default function ArtisanSearch() {
     const trimmed = query.trim();
     setSearchParams(trimmed ? { q: trimmed } : {});
   };
-
-  // Mock featured artisans
-  const featuredArtisans: FeaturedArtisan[] = [
-    {
-      _id: "1",
-      name: "Ahmed Berrada",
-      location: "Marrakech",
-      bio: "Spécialiste en tapis berbères traditionnels avec plus de 15 ans d'expérience",
-      avatar: "",
-      rating: 4.8,
-      followers: 1245,
-    },
-    {
-      _id: "2",
-      name: "Fatima Zohra",
-      location: "Fès",
-      bio: "Maître potière héritière de techniques ancestrales de la céramique marocaine",
-      avatar: "",
-      rating: 4.9,
-      followers: 892,
-    },
-    {
-      _id: "3",
-      name: "Youssef Alami",
-      location: "Casablanca",
-      bio: "Artisan du cuir spécialisé en maroquinerie fine et accessoires sur mesure",
-      avatar: "",
-      rating: 4.7,
-      followers: 1056,
-    },
-  ];
 
   const hasSearchQuery = searchParams.get("q");
 
@@ -233,31 +196,43 @@ export default function ArtisanSearch() {
           </Card>
         )}
 
+        {/* Prompt to search */}
+        {!loading && !error && !hasSearchQuery && (
+          <Card className="rounded-apple border-border">
+            <CardContent className="p-10 text-center space-y-4">
+              <Search className="h-12 w-12 text-muted-foreground mx-auto" />
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold">
+                  Recherchez un artisan pour voir les résultats
+                </h3>
+                <p className="text-muted-foreground">
+                  Entrez un nom, une spécialité ou une localisation pour trouver
+                  des artisans réels correspondant à votre recherche.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Results Grid */}
-        {!loading && !error && (hasSearchQuery ? results.length > 0 : true) && (
+        {!loading && !error && hasSearchQuery && results.length > 0 && (
           <div className="space-y-8">
             <div className="text-center">
               <h2 className="text-2xl font-semibold tracking-tight mb-2">
-                {hasSearchQuery
-                  ? "Résultats de recherche"
-                  : "Artisans en vedette"}
+                Résultats de recherche
               </h2>
               <p className="text-muted-foreground">
-                {hasSearchQuery
-                  ? `${results.length} artisan${
-                      results.length > 1 ? "s" : ""
-                    } trouvé${results.length > 1 ? "s" : ""}`
-                  : "Découvrez quelques-uns de nos artisans les plus talentueux"}
+                {`${results.length} artisan${results.length > 1 ? "s" : ""} trouvé${
+                  results.length > 1 ? "s" : ""
+                }`}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(hasSearchQuery ? results : featuredArtisans).map((artisan) => {
+              {results.map((artisan) => {
                 // Use safe access with optional chaining and fallbacks
-                const artisanFollowers =
-                  "followers" in artisan ? artisan.followers : 0;
-                const artisanRating =
-                  "rating" in artisan ? artisan.rating : 4.8;
+                const artisanFollowers = artisan.followers ?? 0;
+                const artisanRating = artisan.rating ?? 4.8;
 
                 return (
                   <Card
