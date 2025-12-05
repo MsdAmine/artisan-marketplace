@@ -6,6 +6,8 @@ export interface ArtisanSummary {
   avatar?: string;
   location?: string;
   bio?: string;
+  followers?: number;
+  rating?: number;   
 }
 
 export async function searchArtisans(query: string): Promise<ArtisanSummary[]> {

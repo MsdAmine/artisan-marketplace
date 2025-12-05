@@ -202,7 +202,7 @@ export default function AddProductModal({
         image: imageUrl,
       };
 
-      const res = await fetch(`${baseUrl}/api/artisans`, {
+      const res = await fetch(`${baseUrl}/api/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(productBody),
