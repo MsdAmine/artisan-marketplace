@@ -225,7 +225,7 @@ export default function ArtisanProfile() {
                     {isOwnProfile ? (
                       <Button
                         variant="outline"
-                        onClick={() => navigate("/profile/edit")}
+                        onClick={() => navigate(`/artisan/${artisan._id}/edit`)}
                       >
                         Modifier le profil
                       </Button>
