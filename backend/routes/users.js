@@ -29,4 +29,61 @@ router.get("/me", async (req, res) => {
   }
 });
 
+// PUT /api/users/me → update logged in user profile info
+router.put("/me", async (req, res) => {
+  try {
+    const userId = req.headers["x-user-id"];
+
+    if (!userId) {
+      return res.status(401).json({ error: "Missing x-user-id header" });
+    }
+
+    const { name, phone, deliveryAddress } = req.body || {};
+
+    const updates = {};
+
+    if (typeof name === "string") {
+      updates.name = name.trim();
+    }
+
+    if (typeof phone === "string") {
+      updates.phone = phone.trim();
+    }
+
+    if (deliveryAddress && typeof deliveryAddress === "object") {
+      const allowedAddressFields = ["street", "city", "postalCode", "country"];
+      const sanitizedAddress = {};
+
+      allowedAddressFields.forEach((field) => {
+        if (deliveryAddress[field]) {
+          sanitizedAddress[field] = String(deliveryAddress[field]).trim();
+        }
+      });
+
+      updates.deliveryAddress = sanitizedAddress;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: "No valid fields provided" });
+    }
+
+    const db = await connectMongo();
+
+    const result = await db.collection("users").findOneAndUpdate(
+      { _id: new ObjectId(userId) },
+      { $set: updates },
+      { returnDocument: "after", projection: { password: 0 } }
+    );
+
+    if (!result.value) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json(result.value);
+  } catch (err) {
+    console.error("Error in PUT /me:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
+  }
+});
+
 module.exports = router;
