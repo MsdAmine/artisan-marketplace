@@ -126,9 +126,36 @@ async function getArtisanStats(driver, artisanId, currentUserId) {
   }
 }
 
+/* ---------------------------------------------------------
+   GET FOLLOWERS FOR ARTISAN
+--------------------------------------------------------- */
+async function getFollowers(driver, artisanId) {
+  if (!driver) throw new Error("Neo4j driver missing in getFollowers()");
+
+  const session = driver.session({ defaultAccessMode: neo4j.session.READ });
+
+  try {
+    const result = await session.run(
+      `
+      MATCH (u:User)-[:FOLLOWS]->(a:User {id: $artisanId})
+      RETURN u.id AS followerId
+      `,
+      { artisanId }
+    );
+
+    return result.records.map((record) => record.get("followerId"));
+  } catch (err) {
+    console.error("Neo4j error in getFollowers:", err);
+    return [];
+  } finally {
+    await session.close();
+  }
+}
+
 module.exports = {
   trackInteraction,
   followArtisan,
   unfollowArtisan,
   getArtisanStats,
+  getFollowers,
 };
