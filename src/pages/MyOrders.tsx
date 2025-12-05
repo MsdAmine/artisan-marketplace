@@ -52,11 +52,7 @@ export default function MyOrders() {
   const [submittingRating, setSubmittingRating] = useState(false);
   const { toast } = useToast();
 
-  const buildItemRatingKey = (
-    orderId: string,
-    item: any,
-    index: number
-  ) => {
+  const buildItemRatingKey = (orderId: string, item: any, index: number) => {
     return [
       orderId,
       item.productId,
@@ -101,7 +97,9 @@ export default function MyOrders() {
       })
       .filter((item) => item.productId)
       .filter(
-        (item): item is {
+        (
+          item
+        ): item is {
           orderId: string;
           orderItemId: string;
           productId: string;
@@ -120,7 +118,6 @@ export default function MyOrders() {
         title: "Aucune note sélectionnée",
         description:
           "Sélectionnez une note pour au moins un produit avant de l'enregistrer.",
-        variant: "destructive",
       });
       return;
     }
@@ -147,7 +144,6 @@ export default function MyOrders() {
         title: "Échec de l'enregistrement",
         description:
           err?.message || "Impossible d'enregistrer vos notes pour le moment.",
-        variant: "destructive",
       });
     } finally {
       setSubmittingRating(false);
@@ -736,7 +732,9 @@ export default function MyOrders() {
                                       size="sm"
                                       className="rounded-apple"
                                       variant="default"
-                                      onClick={() => handleSubmitRatings(selectedOrder)}
+                                      onClick={() =>
+                                        handleSubmitRatings(selectedOrder)
+                                      }
                                       disabled={submittingRating}
                                     >
                                       {submittingRating
