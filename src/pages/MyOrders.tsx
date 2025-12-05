@@ -714,10 +714,6 @@ export default function MyOrders() {
 
               {/* Actions */}
               <div className="flex justify-end gap-3 pt-4">
-                <Button variant="outline" className="gap-2 rounded-apple">
-                  <Download className="h-4 w-4" />
-                  Télécharger la facture
-                </Button>
                 <Button
                   onClick={() => setSelectedOrder(null)}
                   className="rounded-apple"

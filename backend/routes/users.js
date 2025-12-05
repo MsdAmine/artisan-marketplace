@@ -41,10 +41,10 @@ router.get("/me", async (req, res) => {
 // PUT /api/users/me → update logged in user profile info
 router.put("/me", async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = req.headers["x-user-id"];
 
     if (!userId) {
-      return res.status(401).json({ error: "Missing user identity" });
+      return res.status(401).json({ error: "Missing x-user-id header" });
     }
 
     const { name, phone, deliveryAddress } = req.body || {};
@@ -79,7 +79,7 @@ router.put("/me", async (req, res) => {
     const db = await connectMongo();
 
     const result = await db.collection("users").findOneAndUpdate(
-      { _id: new ObjectId(String(userId)) },
+      { _id: new ObjectId(userId) },
       { $set: updates },
       { returnDocument: "after", projection: { password: 0 } }
     );
