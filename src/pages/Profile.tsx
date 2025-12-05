@@ -10,6 +10,7 @@ import {
   MapPin,
   Package,
   Phone,
+  Pencil,
   Shield,
   ShoppingBag,
   User,
@@ -18,7 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 import { getOrders } from "@/api/orders";
-import { getCurrentUser } from "@/api/users";
+import { getCurrentUser, updateCurrentUserProfile } from "@/api/users";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
 
 type DeliveryAddress = {
@@ -62,6 +74,7 @@ type CustomerProfile = {
   role: string;
   name?: string;
   phone?: string;
+  deliveryAddress?: DeliveryAddress;
 };
 
 const statusStyles: Record<
@@ -96,6 +109,17 @@ export default function Profile() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    street: "",
+    city: "",
+    postalCode: "",
+    country: "",
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -115,6 +139,7 @@ export default function Profile() {
           role: profileData.role,
           name: profileData.name,
           phone: profileData.phone,
+          deliveryAddress: profileData.deliveryAddress,
         });
         setOrders(orderData || []);
       } catch (err) {
@@ -129,6 +154,19 @@ export default function Profile() {
 
     loadProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (!profile) return;
+
+    setFormData({
+      name: profile.name ?? "",
+      phone: profile.phone ?? "",
+      street: profile.deliveryAddress?.street ?? "",
+      city: profile.deliveryAddress?.city ?? "",
+      postalCode: profile.deliveryAddress?.postalCode ?? "",
+      country: profile.deliveryAddress?.country ?? "",
+    });
+  }, [profile]);
 
   const stats = useMemo(() => {
     const totalOrders = orders.length;
@@ -146,6 +184,12 @@ export default function Profile() {
   const addressBook = useMemo(() => {
     const addresses = new Map<string, DeliveryAddress>();
 
+    if (profile?.deliveryAddress) {
+      const { street, city, postalCode, country } = profile.deliveryAddress;
+      const key = `primary-${street || ""}-${city || ""}-${postalCode || ""}-${country || ""}`;
+      addresses.set(key, profile.deliveryAddress);
+    }
+
     orders.forEach((order) => {
       if (!order.deliveryAddress) return;
       const { street, city, postalCode, country } = order.deliveryAddress;
@@ -156,7 +200,54 @@ export default function Profile() {
     });
 
     return Array.from(addresses.values());
-  }, [orders]);
+  }, [orders, profile]);
+
+  async function handleProfileSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!profile) return;
+
+    setSaving(true);
+
+    try {
+      const updatedProfile = await updateCurrentUserProfile({
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        deliveryAddress: {
+          street: formData.street.trim(),
+          city: formData.city.trim(),
+          postalCode: formData.postalCode.trim(),
+          country: formData.country.trim(),
+        },
+      });
+
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: updatedProfile.name ?? prev.name,
+              phone: updatedProfile.phone ?? prev.phone,
+              deliveryAddress:
+                updatedProfile.deliveryAddress ?? prev.deliveryAddress,
+            }
+          : prev
+      );
+
+      toast({
+        title: "Profil mis à jour",
+        description: "Vos informations personnelles ont été enregistrées.",
+      });
+      setEditOpen(false);
+    } catch (err) {
+      console.error("Failed to update profile", err);
+      toast({
+        variant: "destructive",
+        title: "Mise à jour impossible",
+        description: "Veuillez vérifier vos informations et réessayer.",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function formatDate(value?: string) {
     if (!value) return "Date inconnue";
@@ -204,6 +295,11 @@ export default function Profile() {
     );
   }
 
+  const primaryAddress = profile.deliveryAddress;
+  const additionalAddresses = primaryAddress
+    ? addressBook.slice(1)
+    : addressBook;
+
   return (
     <div className="max-w-6xl mx-auto py-10">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
@@ -230,8 +326,12 @@ export default function Profile() {
               <ShoppingBag className="h-4 w-4" /> Mes commandes
             </Link>
           </Button>
-          <Button variant="default" className="gap-2">
-            <Shield className="h-4 w-4" /> Sécurité
+          <Button
+            variant="default"
+            className="gap-2"
+            onClick={() => setEditOpen(true)}
+          >
+            <Pencil className="h-4 w-4" /> Modifier le profil
           </Button>
         </div>
       </div>
@@ -381,15 +481,44 @@ export default function Profile() {
           <Card>
             <CardHeader>
               <CardTitle>Adresses enregistrées</CardTitle>
-              <CardDescription>Basées sur vos commandes récentes</CardDescription>
+              <CardDescription>
+                Adresse principale et adresses issues de vos commandes
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {addressBook.length === 0 && (
+              <div className="flex gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <Home className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="font-semibold">Adresse principale</p>
+                  {primaryAddress ? (
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p>
+                        {[primaryAddress.street, primaryAddress.postalCode, primaryAddress.city]
+                          .filter(Boolean)
+                          .join(", ") || "Adresse partielle"}
+                      </p>
+                      {primaryAddress.country && (
+                        <p className="flex items-center gap-1">
+                          <MapPin className="h-4 w-4" /> {primaryAddress.country}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Ajoutez votre adresse de livraison depuis "Modifier le profil".
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Separator />
+              {additionalAddresses.length === 0 && (
                 <p className="text-sm text-muted-foreground">
                   Ajoutez une première adresse lors de votre prochaine commande.
                 </p>
               )}
-              {addressBook.map((address, idx) => (
+              {additionalAddresses.map((address, idx) => (
                 <div key={idx} className="flex gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                     <Home className="h-5 w-5" />
@@ -413,6 +542,100 @@ export default function Profile() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier mon profil</DialogTitle>
+            <DialogDescription>
+              Mettez à jour vos informations de contact et votre adresse de livraison.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form className="space-y-4" onSubmit={handleProfileSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nom</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, name: event.target.value }))
+                  }
+                  placeholder="Votre nom et prénom"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, phone: event.target.value }))
+                  }
+                  placeholder="06 12 34 56 78"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="street">Adresse</Label>
+                <Input
+                  id="street"
+                  value={formData.street}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, street: event.target.value }))
+                  }
+                  placeholder="12 rue de l'Artisan"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Code postal</Label>
+                <Input
+                  id="postalCode"
+                  value={formData.postalCode}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, postalCode: event.target.value }))
+                  }
+                  placeholder="75001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="city">Ville</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, city: event.target.value }))
+                  }
+                  placeholder="Paris"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Pays</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(event) =>
+                    setFormData((prev) => ({ ...prev, country: event.target.value }))
+                  }
+                  placeholder="France"
+                />
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={() => setEditOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? "Enregistrement..." : "Enregistrer"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
