@@ -170,6 +170,16 @@ export default function Navbar() {
       label: "Admin Panel",
       icon: <BarChart3 className="h-4 w-4" />,
     },
+    user?.role === "admin" && {
+      path: "/admin/orders",
+      label: "Commandes",
+      icon: <Package className="h-4 w-4" />,
+    },
+    user?.role === "admin" && {
+      path: "/admin/artisans",
+      label: "Artisans",
+      icon: <User className="h-4 w-4" />,
+    },
   ].filter(Boolean) as NavLink[]; // Filter removes 'false' values, cast ensures type safety
 
   return (

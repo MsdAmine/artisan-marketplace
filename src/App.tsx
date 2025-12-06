@@ -13,6 +13,8 @@ import ArtisanProfile from "@/pages/ArtisanProfile";
 import EditArtisanProfile from "@/pages/EditArtisanProfile";
 import Profile from "@/pages/Profile";
 import ArtisanSearch from "@/pages/ArtisanSearch";
+import AdminOrders from "@/pages/admin/AdminOrders";
+import AdminArtisans from "@/pages/admin/AdminArtisans";
 
 export default function App() {
   const location = useLocation();
@@ -99,6 +101,22 @@ export default function App() {
             element={
               <ProtectedRoute roles={["admin"]}>
                 <Stats />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/orders"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <AdminOrders />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/artisans"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <AdminArtisans />
               </ProtectedRoute>
             }
           />
