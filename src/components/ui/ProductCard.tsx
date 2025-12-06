@@ -1,3 +1,4 @@
+// src/components/ui/ProductCard.tsx (CODE CORRIGÉ)
 import {
   Card,
   CardHeader,
@@ -17,17 +18,28 @@ import {
   Tag
 } from "lucide-react";
 import { useArtisanName } from "@/hooks/useArtisanName";
+import { useProductRating } from "@/hooks/useProductRating"; 
 
 export default function ProductCard({ p, viewMode = "grid" }: any) {
   const [open, setOpen] = useState(false);
 
   const fetchedArtisanName = useArtisanName(p.artisanId);
+  const { average: fetchedRating, totalReviews } = useProductRating(p._id); 
 
   const artisanName =
     fetchedArtisanName || p.artisan || "Artisan local";
   
   const artisanProfilePath = p.artisanId ? `/artisan/${p.artisanId}` : null;
 
+  // LOGIQUE DE LA NOTE RÉELLE (Simplifié pour ne pas retourner "0.0")
+  // Retourne la note formatée ou null si la note est 0.
+  const averageRating = fetchedRating > 0
+    ? parseFloat(fetchedRating).toFixed(1)
+    : null; 
+  
+  // Cette variable est la clé pour contrôler l'affichage. Elle est true seulement s'il y a des avis.
+  const hasReviews = totalReviews > 0;
+  
   const renderArtisanLink = (
     <div className="flex items-center gap-2 text-sm">
       <span className="text-muted-foreground">Par</span>
@@ -96,10 +108,15 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
                       <Tag className="h-3 w-3 mr-1" />
                       {p.category || "Non catégorisé"}
                     </Badge>
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm font-medium">4.8</span>
-                    </div>
+                    
+                    {/* CORRECTION POUR L'AFFICHAGE DE LA NOTE - VUE LIST */}
+                    {hasReviews && averageRating !== null && ( 
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-sm font-medium">{averageRating}</span> 
+                          <span className="text-xs text-muted-foreground">({totalReviews})</span>
+                        </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-primary">
@@ -178,12 +195,15 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
           </div>
           
           {/* Rating */}
-          <div className="absolute top-3 right-3">
-            <div className="bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-semibold">4.8</span>
-            </div>
-          </div>
+          {/* CORRECTION POUR L'AFFICHAGE DE LA NOTE - VUE GRID */}
+          {hasReviews && averageRating !== null && ( 
+              <div className="absolute top-3 right-3">
+                <div className="bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs font-semibold">{averageRating}</span> 
+                </div>
+              </div>
+          )}
         </div>
 
         {/* Content */}

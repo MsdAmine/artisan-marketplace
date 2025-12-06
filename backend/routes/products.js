@@ -1,3 +1,5 @@
+// backend/routes/products.js (INCHANGÉ - CORRESPOND À VOTRE CODE FOURNI)
+
 const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
@@ -165,6 +167,52 @@ router.delete("/:id", async (req, res) => {
   } catch (err) {
     console.error("DELETE PRODUCT ERROR", err);
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ---------------------------------------
+// GET product average rating (READ) 
+// Mounted at /api/products/:productId/rating
+// ---------------------------------------
+router.get("/:productId/rating", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    if (!ObjectId.isValid(productId)) {
+      return res.status(400).json({ error: "Invalid product ID" });
+    }
+
+    const db = await connectMongo();
+
+    // Agrégation MongoDB pour calculer la moyenne et le compte
+    const aggregationResult = await db.collection("productRatings").aggregate([
+      {
+        // 1. Filtrer par le produit spécifique
+        $match: { productId: new ObjectId(productId) },
+      },
+      {
+        // 2. Grouper toutes les notes pour ce produit
+        $group: {
+          _id: "$productId",
+          average: { $avg: "$rating" }, // Calcul de la note moyenne
+          totalReviews: { $sum: 1 },    // Compte du nombre total d'avis
+        },
+      },
+    ]).toArray();
+
+    let average = 0;
+    let totalReviews = 0;
+
+    if (aggregationResult.length > 0) {
+      average = parseFloat(aggregationResult[0].average.toFixed(1)); // Limiter à une décimale
+      totalReviews = aggregationResult[0].totalReviews;
+    }
+
+    // Le front-end attend { average: number, totalReviews: number }
+    res.json({ average, totalReviews });
+  } catch (err) {
+    console.error("GET PRODUCT AVERAGE RATING ERROR", err);
+    res.status(500).json({ error: "Failed to calculate product rating" });
   }
 });
 
