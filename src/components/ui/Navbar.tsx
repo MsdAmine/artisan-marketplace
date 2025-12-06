@@ -139,16 +139,25 @@ export default function Navbar() {
 
   const isActive = (path: string) =>
     location.pathname ===
-    path; /** Desktop links (dynamic based on auth + role) **/ // Use NavLink | false[] to allow conditional elements, then filter and cast to NavLink[]
+    path; 
+  
+  const isArtisan = user?.role === "artisan"; // Vérifie si l'utilisateur est un artisan
+
+  /** Desktop links (dynamic based on auth + role) **/ // Use NavLink | false[] to allow conditional elements, then filter and cast to NavLink[]
 
   const navLinks: NavLink[] = [
-    { path: "/", label: "Accueil", icon: <Home className="h-4 w-4" /> },
-    {
+    // Condition: Afficher 'Accueil' uniquement si l'utilisateur n'est PAS un artisan
+    !isArtisan && { path: "/", label: "Accueil", icon: <Home className="h-4 w-4" /> },
+    
+    // Condition: Afficher 'Panier' uniquement si l'utilisateur n'est PAS un artisan
+    !isArtisan && {
       path: "/cart",
       label: "Panier",
       icon: <ShoppingCart className="h-4 w-4" />,
       badge: cartCount,
-    }, // ADDITION: Profile link, visible only if the user is authenticated
+    }, 
+    
+    // ADDITION: Profile link, visible only if the user is authenticated
     user && {
       path: user.role === "artisan" ? `/artisan/${user.id}` : "/profile",
       label: "Mon Profil",
