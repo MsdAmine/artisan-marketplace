@@ -11,6 +11,13 @@ function getUserId(req) {
   return req.user?.id || req.headers["x-user-id"];
 }
 
+function normalizeUser(userDoc) {
+  if (!userDoc) return null;
+
+  const { _id, password, ...rest } = userDoc;
+  return { id: String(_id), ...rest };
+}
+
 // GET /api/users/me  → return logged in user info
 router.get("/me", async (req, res) => {
   try {
@@ -31,7 +38,7 @@ router.get("/me", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(user);
+    res.json(normalizeUser(user));
   } catch (err) {
     console.error("Error in GET /me:", err);
     res.status(500).json({ error: "Server error", details: err.message });
@@ -41,10 +48,10 @@ router.get("/me", async (req, res) => {
 // PUT /api/users/me → update logged in user profile info
 router.put("/me", async (req, res) => {
   try {
-    const userId = req.headers["x-user-id"];
+    const userId = getUserId(req);
 
     if (!userId) {
-      return res.status(401).json({ error: "Missing x-user-id header" });
+      return res.status(401).json({ error: "Missing user identity" });
     }
 
     const { name, phone, deliveryAddress, avatar } = req.body || {};
@@ -83,7 +90,7 @@ router.put("/me", async (req, res) => {
     const db = await connectMongo();
 
     const result = await db.collection("users").findOneAndUpdate(
-      { _id: new ObjectId(userId) },
+      { _id: new ObjectId(String(userId)) },
       { $set: updates },
       { returnDocument: "after", projection: { password: 0 } }
     );
@@ -92,7 +99,7 @@ router.put("/me", async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    res.json(result.value);
+    res.json(normalizeUser(result.value));
   } catch (err) {
     console.error("Error in PUT /me:", err);
     res.status(500).json({ error: "Server error", details: err.message });

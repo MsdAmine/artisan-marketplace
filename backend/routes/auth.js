@@ -29,7 +29,7 @@ router.post("/signup", async (req, res) => {
     });
 
     const token = jwt.sign(
-      { id: result.insertedId, role },
+      { id: String(result.insertedId), role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -37,7 +37,7 @@ router.post("/signup", async (req, res) => {
     res.json({
       token,
       user: {
-        id: result.insertedId,
+        id: String(result.insertedId),
         name,
         email,
         role,
@@ -66,7 +66,7 @@ router.post("/login", async (req, res) => {
     if (!valid) return res.status(400).json({ message: "Invalid email or password" });
 
     const token = jwt.sign(
-      { id: user._id, role: user.role },
+      { id: String(user._id), role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -74,7 +74,7 @@ router.post("/login", async (req, res) => {
     res.json({
       token,
       user: {
-        id: user._id,
+        id: String(user._id),
         name: user.name,
         email: user.email,
         role: user.role,

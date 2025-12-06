@@ -126,6 +126,16 @@ export default function Profile() {
     country: "",
   });
 
+  function normalizeId(value: unknown): string {
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      if (typeof record.$oid === "string") return record.$oid;
+      if (typeof record.toString === "function") return record.toString();
+    }
+    return "";
+  }
+
   useEffect(() => {
     if (!user) return;
 
@@ -139,7 +149,7 @@ export default function Profile() {
         ]);
 
         setProfile({
-          id: profileData.id || profileData._id,
+          id: normalizeId(profileData.id || profileData._id),
           email: profileData.email,
           role: profileData.role,
           name: profileData.name,
