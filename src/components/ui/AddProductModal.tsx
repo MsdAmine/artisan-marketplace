@@ -364,7 +364,7 @@ export default function AddProductModal({
         </div>
 
         {activeStep === 1 ? (
-          <div className="space-y-6">
+          <div className="space-y-6 overflow-x-hidden">
             {/* Basic info */}
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
@@ -505,15 +505,18 @@ export default function AddProductModal({
                 <div className="relative">
                   <div className="border border-border rounded-apple p-4">
                     <div className="flex items-center gap-4">
-                      <div className="h-24 w-24 rounded-apple overflow-hidden">
+                      {/* Image Thumbnail container: Fixed size, cannot shrink */}
+                      <div className="h-24 w-24 rounded-apple overflow-hidden flex-shrink-0">
                         <img
                           src={imagePreview}
                           alt="Preview"
                           className="h-full w-full object-cover"
                         />
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-2">
+                      
+                      {/* FIX APPLIED HERE: Added flex-grow, flex-shrink, and w-full */}
+                      <div className="flex-grow flex-shrink min-w-0">
+                        <p className="text-sm text-muted-foreground mb-2 truncate w-full">
                           {file?.name}
                         </p>
                         <Button
