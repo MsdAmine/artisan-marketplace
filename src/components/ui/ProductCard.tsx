@@ -1,4 +1,4 @@
-// src/components/ui/ProductCard.tsx (CODE CORRIGÉ)
+// src/components/ui/ProductCard.tsx (CODE FINAL CORRIGÉ)
 import {
   Card,
   CardHeader,
@@ -24,6 +24,7 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
   const [open, setOpen] = useState(false);
 
   const fetchedArtisanName = useArtisanName(p.artisanId);
+  // Assurez-vous que useProductRating est importé correctement (avec l'alias '@/hooks/useProductRating' ou '../hooks/useProductRating')
   const { average: fetchedRating, totalReviews } = useProductRating(p._id); 
 
   const artisanName =
@@ -31,14 +32,14 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
   
   const artisanProfilePath = p.artisanId ? `/artisan/${p.artisanId}` : null;
 
-  // LOGIQUE DE LA NOTE RÉELLE (Simplifié pour ne pas retourner "0.0")
-  // Retourne la note formatée ou null si la note est 0.
-  const averageRating = fetchedRating > 0
-    ? parseFloat(fetchedRating).toFixed(1)
-    : null; 
+  // 1. 🟢 NOUVELLE LOGIQUE DE LA NOTE : 
+  // fetchedRating (qui vient du hook) sera 0 si pas d'avis. 
+  // On le formate en chaîne de caractères (ex: 5.0, 3.0, ou 0.0)
+  const averageRating = parseFloat(fetchedRating).toFixed(1); 
   
-  // Cette variable est la clé pour contrôler l'affichage. Elle est true seulement s'il y a des avis.
-  const hasReviews = totalReviews > 0;
+  // La variable hasReviews n'est plus utilisée pour la visibilité du bloc,
+  // mais elle peut servir à afficher le nombre d'avis.
+  const hasReviews = totalReviews > 0; 
   
   const renderArtisanLink = (
     <div className="flex items-center gap-2 text-sm">
@@ -109,14 +110,12 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
                       {p.category || "Non catégorisé"}
                     </Badge>
                     
-                    {/* CORRECTION POUR L'AFFICHAGE DE LA NOTE - VUE LIST */}
-                    {hasReviews && averageRating !== null && ( 
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          <span className="text-sm font-medium">{averageRating}</span> 
-                          <span className="text-xs text-muted-foreground">({totalReviews})</span>
-                        </div>
-                    )}
+                    {/* 2. 🟢 AFFICHAGE CORRIGÉ - VUE LIST : Toujours afficher la note */}
+                    <div className="flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm font-medium">{averageRating}</span> 
+                        <span className="text-xs text-muted-foreground">({totalReviews})</span>
+                    </div>
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-primary">
@@ -195,15 +194,13 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
           </div>
           
           {/* Rating */}
-          {/* CORRECTION POUR L'AFFICHAGE DE LA NOTE - VUE GRID */}
-          {hasReviews && averageRating !== null && ( 
-              <div className="absolute top-3 right-3">
-                <div className="bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                  <span className="text-xs font-semibold">{averageRating}</span> 
-                </div>
-              </div>
-          )}
+          {/* 2. 🟢 AFFICHAGE CORRIGÉ - VUE GRID : Toujours afficher la note */}
+          <div className="absolute top-3 right-3">
+            <div className="bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+              <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+              <span className="text-xs font-semibold">{averageRating}</span> 
+            </div>
+          </div>
         </div>
 
         {/* Content */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 // ✅ CORRECTION DU CHEMIN RELATIF
-import { getProductAverageRating } from '../api/productRatings'; 
+import { getProductAverageRating } from '@/api/productRatings';
 
 export function useProductRating(productId) {
     const [rating, setRating] = useState({ average: 0, totalReviews: 0 });
