@@ -65,7 +65,7 @@ export default function ArtisanProfile() {
     import.meta.env.VITE_API_URL?.replace(/\/$/, "") || window.location.origin;
 
   // -----------------------------
-  //  LOAD ARTISAN PROFILE
+  // 	LOAD ARTISAN PROFILE
   // -----------------------------
   useEffect(() => {
     if (!id) return;
@@ -103,7 +103,7 @@ export default function ArtisanProfile() {
   }
 
   // -----------------------------
-  //  FOLLOW / UNFOLLOW
+  // 	FOLLOW / UNFOLLOW
   // -----------------------------
   async function toggleFollow() {
     if (!currentUser) {
@@ -149,7 +149,7 @@ export default function ArtisanProfile() {
   }
 
   // -----------------------------
-  //  LOADING UI
+  // 	LOADING UI
   // -----------------------------
   if (loading || authLoading) {
     return (
@@ -180,7 +180,7 @@ export default function ArtisanProfile() {
   }
 
   // -----------------------------
-  //  ARTISAN NOT FOUND
+  // 	ARTISAN NOT FOUND
   // -----------------------------
   if (!profile || !profile.artisan) {
     return (
@@ -226,140 +226,143 @@ export default function ArtisanProfile() {
         )}
 
         {/* ---------------------------------------------------------------- */}
-        {/*                           PROFILE HEADER                         */}
+        {/* EN-TÊTE DE PROFIL (FULL WIDTH pour la carte principale)          */}
         {/* ---------------------------------------------------------------- */}
-        <div className="flex flex-col lg:flex-row gap-8 mb-12">
-          {/* Left Side */}
-          <div className="lg:w-2/3">
-            <div className="border rounded-xl p-8 bg-gradient-to-r from-primary/5 to-secondary/5">
-              <div className="flex items-start gap-6">
-                {/* Avatar */}
-                <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
-                  <AvatarImage src={artisan.avatar} />
-                  <AvatarFallback>{artisan.name.charAt(0)}</AvatarFallback>
-                </Avatar>
+        <div className="mb-8">
+          {/* CARTE D'INFO PRINCIPALE (FULL WIDTH - Élimine l'espace blanc) */}
+          <div className="border rounded-xl p-8 bg-gradient-to-r from-primary/5 to-secondary/5">
+            <div className="flex items-start gap-6">
+              {/* Avatar */}
+              <Avatar className="h-32 w-32 border-4 border-background shadow-lg">
+                <AvatarImage src={artisan.avatar} />
+                <AvatarFallback>{artisan.name.charAt(0)}</AvatarFallback>
+              </Avatar>
 
-                <div className="flex-1">
-                  <div className="flex justify-between items-start mb-4">
-                    {/* Name + badges */}
-                    <div>
-                      <h1 className="text-3xl font-semibold">{artisan.name}</h1>
+              <div className="flex-1">
+                <div className="flex justify-between items-start mb-4">
+                  {/* Name + badges */}
+                  <div>
+                    <h1 className="text-3xl font-semibold">{artisan.name}</h1>
 
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-3">
-                        <span className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4" /> {artisan.location || "Indéterminée"}
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <Users className="h-4 w-4" />
-                          {stats.followers} abonnés
-                        </span>
-                        <span className="flex items-center gap-2">
-                          <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          {stats.averageRating} ({stats.totalSales} ventes)
-                        </span>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-3">
+                      <span className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" /> {artisan.location || "Indéterminée"}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        {stats.followers} abonnés
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        {stats.averageRating} ({stats.totalSales} ventes)
+                      </span>
                     </div>
-
-                    {/* ⭐ EDIT BUTTON or FOLLOW BUTTON */}
-                    {isOwnProfile ? (
-                      <Button
-                        variant="outline"
-                        onClick={() => navigate(`/artisan/${artisan._id}/edit`)}
-                      >
-                        Modifier le profil
-                      </Button>
-                    ) : (
-                      <Button
-                        onClick={toggleFollow}
-                        disabled={followLoading}
-                        variant={stats.isFollowing ? "outline" : "default"}
-                      >
-                        {stats.isFollowing ? "Suivi" : "Suivre"}
-                      </Button>
-                    )}
                   </div>
 
-                  <p className="text-muted-foreground mt-4">{artisan.bio}</p>
+                  {/* ⭐ EDIT BUTTON or FOLLOW BUTTON */}
+                  {isOwnProfile ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(`/artisan/${artisan._id}/edit`)}
+                    >
+                      Modifier le profil
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={toggleFollow}
+                      disabled={followLoading}
+                      variant={stats.isFollowing ? "outline" : "default"}
+                    >
+                      {stats.isFollowing ? "Suivi" : "Suivre"}
+                    </Button>
+                  )}
                 </div>
+
+                <p className="text-muted-foreground mt-4">{artisan.bio}</p>
               </div>
             </div>
           </div>
 
-          {/* Right Side Stats */}
-          <div className="lg:w-1/3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Statistiques</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Stat
-                  label="Produits actifs"
-                  value={products.length}
-                  icon={Package}
-                />
-                <Stat
-                  label="Total des ventes"
-                  value={stats.totalSales ?? 0}
-                  icon={ShoppingBag}
-                />
-                <Stat
-                  label="Note moyenne"
-                  value={`${stats.averageRating}/5`}
-                  icon={Star}
-                />
-                <Stat
-                  label="Depuis"
-                  value={
-                    artisan.joinedDate
-                      ? new Date(artisan.joinedDate).toLocaleDateString(
-                          "fr-FR",
-                          {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                          }
-                        )
-                      : "N/A"
-                  }
-                  icon={Calendar}
-                />
-              </CardContent>
-            </Card>
+          {/* STATS AND CONTACT (Placés sous la carte principale, côte à côte sur grand écran) */}
+          <div className="flex flex-col lg:flex-row gap-6 mt-6">
+            {/* Statistiques */}
+            <div className="lg:w-1/2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Statistiques</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Stat
+                    label="Produits actifs"
+                    value={products.length}
+                    icon={Package}
+                  />
+                  <Stat
+                    label="Total des ventes"
+                    value={stats.totalSales ?? 0}
+                    icon={ShoppingBag}
+                  />
+                  <Stat
+                    label="Note moyenne"
+                    value={`${stats.averageRating}/5`}
+                    icon={Star}
+                  />
+                  <Stat
+                    label="Depuis"
+                    value={
+                      artisan.joinedDate
+                        ? new Date(artisan.joinedDate).toLocaleDateString(
+                            "fr-FR",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                            }
+                          )
+                        : "N/A"
+                    }
+                    icon={Calendar}
+                  />
+                </CardContent>
+              </Card>
+            </div>
 
             {/* Contact */}
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle>Contact</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {artisan.email && (
-                  <ContactRow
-                    icon={Mail}
-                    text={artisan.email}
-                    link={`mailto:${artisan.email}`}
-                  />
-                )}
-                {artisan.phone && (
-                  <ContactRow
-                    icon={Phone}
-                    text={artisan.phone}
-                    link={`tel:${artisan.phone}`}
-                  />
-                )}
-                {artisan.website && (
-                  <ContactRow
-                    icon={Globe}
-                    text={artisan.website}
-                    link={artisan.website}
-                  />
-                )}
-              </CardContent>
-            </Card>
+            <div className="lg:w-1/2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Contact</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {artisan.email && (
+                    <ContactRow
+                      icon={Mail}
+                      text={artisan.email}
+                      link={`mailto:${artisan.email}`}
+                    />
+                  )}
+                  {artisan.phone && (
+                    <ContactRow
+                      icon={Phone}
+                      text={artisan.phone}
+                      link={`tel:${artisan.phone}`}
+                    />
+                  )}
+                  {artisan.website && (
+                    <ContactRow
+                      icon={Globe}
+                      text={artisan.website}
+                      link={artisan.website}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
 
         {/* ---------------------------------------------------------------- */}
-        {/*                           PRODUCTS GRID                          */}
+        {/* PRODUCTS GRID 			 				 */}
         {/* ---------------------------------------------------------------- */}
         <div>
           <div className="flex justify-between items-center mb-8">
