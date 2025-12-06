@@ -36,5 +36,11 @@ export async function updateCurrentUserProfile(payload: UpdateUserPayload) {
     throw new Error(`Failed to update user profile (status ${res.status})`);
   }
 
+  const contentType = res.headers.get("content-type") || "";
+
+  if (res.status === 204 || !contentType.includes("application/json")) {
+    return payload;
+  }
+
   return res.json();
 }
