@@ -51,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           id: data.id || data._id,
           email: data.email,
           role: data.role,
+          avatar: data.avatar || null,
         });
       } catch (err) {
         console.error("Auth load error:", err);

@@ -47,7 +47,7 @@ router.put("/me", async (req, res) => {
       return res.status(401).json({ error: "Missing x-user-id header" });
     }
 
-    const { name, phone, deliveryAddress } = req.body || {};
+    const { name, phone, deliveryAddress, avatar } = req.body || {};
 
     const updates = {};
 
@@ -57,6 +57,10 @@ router.put("/me", async (req, res) => {
 
     if (typeof phone === "string") {
       updates.phone = phone.trim();
+    }
+
+    if (typeof avatar === "string") {
+      updates.avatar = avatar.trim();
     }
 
     if (deliveryAddress && typeof deliveryAddress === "object") {
