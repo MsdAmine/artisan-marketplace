@@ -113,7 +113,7 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
                     {/* 2. 🟢 AFFICHAGE CORRIGÉ - VUE LIST : Toujours afficher la note */}
                     <div className="flex items-center gap-1">
                         <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                        <span className="text-sm font-medium">{averageRating}</span> 
+                        <span className="text-sm font-medium">{totalReviews === 0 ? 'N/A' : averageRating}</span> 
                         <span className="text-xs text-muted-foreground">({totalReviews})</span>
                     </div>
                   </div>
@@ -198,7 +198,7 @@ export default function ProductCard({ p, viewMode = "grid" }: any) {
           <div className="absolute top-3 right-3">
             <div className="bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs font-semibold">{averageRating}</span> 
+              <span className="text-xs font-semibold">{totalReviews === 0 ? 'N/A' : averageRating}</span> 
             </div>
           </div>
         </div>

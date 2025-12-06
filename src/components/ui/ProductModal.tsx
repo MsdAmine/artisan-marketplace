@@ -1,3 +1,5 @@
+// src/components/ui/ProductModal.jsx (CODE CORRIGÉ)
+
 import {
   Dialog,
   DialogContent,
@@ -25,6 +27,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { trackInteraction } from "@/api/recommendations";
 import { useArtisanName } from "@/hooks/useArtisanName";
+// 🟢 IMPORTATION DU HOOK DE NOTE
+import { useProductRating } from "@/hooks/useProductRating"; 
 
 export default function ProductModal({ open, onClose, product }: any) {
   const [loading, setLoading] = useState(false);
@@ -33,6 +37,11 @@ export default function ProductModal({ open, onClose, product }: any) {
   const { user } = useAuth();
 
   const artisanName = useArtisanName(product?.artisanId);
+  // 🟢 UTILISATION DU HOOK DE NOTE
+  const { average: fetchedRating, totalReviews } = useProductRating(product?._id);
+
+  // 🟢 CALCUL DE LA NOTE FORMATÉE (pour afficher X.X, même 0.0)
+  const averageRating = parseFloat(fetchedRating).toFixed(1);
 
   // If no product, do not render the modal
   if (!product) return null;
@@ -169,10 +178,11 @@ export default function ProductModal({ open, onClose, product }: any) {
                   <Tag className="h-3 w-3" />
                   {product.category || "Non catégorisé"}
                 </Badge>
+                {/* 🟢 REMPLACEMENT DES VALEURS STATIQUES PAR LES VALEURS RÉELLES */}
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="text-sm font-medium">4.8</span>
-                  <span className="text-sm text-muted-foreground">(42)</span>
+                  <span className="text-sm font-medium">{totalReviews === 0 ? 'N/A' : averageRating}</span> {/* Utilisation de la note réelle ou "0.0" */}
+                  <span className="text-sm text-muted-foreground">({totalReviews})</span> {/* Utilisation du nombre d'avis réel */}
                 </div>
               </div>
               <DialogTitle className="text-2xl font-semibold tracking-tight">
@@ -305,7 +315,7 @@ export default function ProductModal({ open, onClose, product }: any) {
                   <p className="font-medium">
                     {product._id?.slice(-8).toUpperCase() ||
                       "ART-" +
-                        Math.random().toString(36).substr(2, 6).toUpperCase()}
+                      Math.random().toString(36).substr(2, 6).toUpperCase()}
                   </p>
                 </div>
               </div>
