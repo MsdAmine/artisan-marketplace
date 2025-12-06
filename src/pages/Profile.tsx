@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 
 import { getOrders } from "@/api/orders";
 import { getCurrentUser, updateCurrentUserProfile } from "@/api/users";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -74,6 +74,7 @@ type CustomerProfile = {
   role: string;
   name?: string;
   phone?: string;
+  avatar?: string | null;
   deliveryAddress?: DeliveryAddress;
 };
 
@@ -112,6 +113,10 @@ export default function Profile() {
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const apiBaseUrl =
+    import.meta.env.VITE_API_URL?.replace(/\/$/, "") || window.location.origin;
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -120,6 +125,16 @@ export default function Profile() {
     postalCode: "",
     country: "",
   });
+
+  function normalizeId(value: unknown): string {
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      if (typeof record.$oid === "string") return record.$oid;
+      if (typeof record.toString === "function") return record.toString();
+    }
+    return "";
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -134,11 +149,12 @@ export default function Profile() {
         ]);
 
         setProfile({
-          id: profileData.id || profileData._id,
+          id: normalizeId(profileData.id || profileData._id),
           email: profileData.email,
           role: profileData.role,
           name: profileData.name,
           phone: profileData.phone,
+          avatar: profileData.avatar,
           deliveryAddress: profileData.deliveryAddress,
         });
         setOrders(orderData || []);
@@ -166,7 +182,16 @@ export default function Profile() {
       postalCode: profile.deliveryAddress?.postalCode ?? "",
       country: profile.deliveryAddress?.country ?? "",
     });
+    setAvatarPreview(profile.avatar || null);
   }, [profile]);
+
+  useEffect(() => {
+    return () => {
+      if (avatarPreview?.startsWith("blob:")) {
+        URL.revokeObjectURL(avatarPreview);
+      }
+    };
+  }, [avatarPreview]);
 
   const stats = useMemo(() => {
     const totalOrders = orders.length;
@@ -202,6 +227,18 @@ export default function Profile() {
     return Array.from(addresses.values());
   }, [orders, profile]);
 
+  function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (avatarPreview?.startsWith("blob:")) {
+      URL.revokeObjectURL(avatarPreview);
+    }
+
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  }
+
   async function handleProfileSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!profile) return;
@@ -209,9 +246,32 @@ export default function Profile() {
     setSaving(true);
 
     try {
+      let avatarUrl = profile.avatar || null;
+
+      if (avatarFile) {
+        const uploadData = new FormData();
+        uploadData.append("image", avatarFile);
+
+        const uploadRes = await fetch(
+          new URL("/api/upload", apiBaseUrl).toString(),
+          {
+            method: "POST",
+            body: uploadData,
+          }
+        );
+
+        if (!uploadRes.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const uploaded = await uploadRes.json();
+        avatarUrl = uploaded.url;
+      }
+
       const updatedProfile = await updateCurrentUserProfile({
         name: formData.name.trim(),
         phone: formData.phone.trim(),
+        avatar: avatarUrl ?? undefined,
         deliveryAddress: {
           street: formData.street.trim(),
           city: formData.city.trim(),
@@ -226,11 +286,14 @@ export default function Profile() {
               ...prev,
               name: updatedProfile.name ?? prev.name,
               phone: updatedProfile.phone ?? prev.phone,
+              avatar: updatedProfile.avatar ?? avatarUrl ?? prev.avatar,
               deliveryAddress:
                 updatedProfile.deliveryAddress ?? prev.deliveryAddress,
             }
           : prev
       );
+      setAvatarFile(null);
+      setAvatarPreview(avatarUrl || null);
 
       toast({
         title: "Profil mis à jour",
@@ -304,6 +367,7 @@ export default function Profile() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div className="flex items-center gap-4">
           <Avatar className="h-16 w-16">
+            <AvatarImage src={profile.avatar || undefined} alt={profile.name} />
             <AvatarFallback className="text-lg font-semibold">
               {profile.name?.[0]?.toUpperCase() || profile.email[0]?.toUpperCase()}
             </AvatarFallback>
@@ -532,6 +596,20 @@ export default function Profile() {
           </DialogHeader>
 
           <form className="space-y-4" onSubmit={handleProfileSubmit}>
+            <div className="flex items-center gap-4">
+              <Avatar className="h-14 w-14">
+                <AvatarImage src={avatarPreview || undefined} />
+                <AvatarFallback>
+                  {formData.name?.[0]?.toUpperCase() || profile.name?.[0] || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="space-y-1 text-sm text-muted-foreground">
+                <p>Photo de profil</p>
+                <Input type="file" accept="image/*" onChange={handleAvatarChange} />
+                <p className="text-xs">Formats acceptés : JPG, PNG, WEBP.</p>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nom</Label>

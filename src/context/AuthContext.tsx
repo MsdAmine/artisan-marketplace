@@ -22,6 +22,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(storedAuth?.token || null);
   const [loading, setLoading] = useState(false); // no delay
 
+  function normalizeId(value: unknown): string {
+    if (typeof value === "string") return value;
+    if (value && typeof value === "object") {
+      const record = value as Record<string, unknown>;
+      if (typeof record.$oid === "string") return record.$oid;
+      if (typeof record.toString === "function") return record.toString();
+    }
+    return "";
+  }
+
   useEffect(() => {
     if (!token) return;
 
@@ -48,9 +58,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (cancelled) return;
 
         setUser({
-          id: data.id || data._id,
+          id: normalizeId(data.id || data._id),
           email: data.email,
           role: data.role,
+          avatar: data.avatar || null,
         });
       } catch (err) {
         console.error("Auth load error:", err);
