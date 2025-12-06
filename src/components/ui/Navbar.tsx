@@ -202,7 +202,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {" "}
         <div className="flex items-center justify-between h-16">
-          {/* LOGO */}{" "}
+          {/* LOGO */}
           <Link to="/" className="flex items-center gap-2 group">
             {" "}
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-primary flex items-center justify-center shadow-lg">
@@ -246,42 +246,48 @@ export default function Navbar() {
           {/* RIGHT SIDE */}{" "}
           <div className="flex items-center gap-2 sm:gap-3">
             {/* Search */}
-            <div className="relative">
-              <form onSubmit={handleSearchSubmit} className="flex items-center gap-2">
-                {searchOpen && (
-                  <Input
-                    ref={searchInputRef}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Rechercher un artisan"
-                    className="w-52 sm:w-64 pr-10"
-                    onBlur={() => {
-                      if (!searchTerm) {
-                        setSearchOpen(false);
-                      }
-                    }}
-                  />
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`h-9 w-9 rounded-full hover:bg-muted ${
-                    searchOpen ? "bg-muted" : ""
-                  }`}
-                  title="Rechercher un artisan"
-                  type={searchOpen ? "submit" : "button"}
-                  onClick={() => {
-                    if (searchOpen && searchTerm.trim()) {
-                      submitSearch();
-                      return;
-                    }
-                    setSearchOpen((open) => !open);
-                  }}
+            {/* CONDITION AJOUTÉE: N'affiche la recherche que si l'utilisateur n'est NI artisan NI admin */}
+            {!isArtisan &&  (
+              <div className="relative">
+                <form
+                  onSubmit={handleSearchSubmit}
+                  className="flex items-center gap-2"
                 >
-                  <Search className="h-4 w-4" />
-                </Button>
-              </form>
-            </div>
+                  {searchOpen && (
+                    <Input
+                      ref={searchInputRef}
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Rechercher un artisan"
+                      className="w-52 sm:w-64 pr-10"
+                      onBlur={() => {
+                        if (!searchTerm) {
+                          setSearchOpen(false);
+                        }
+                      }}
+                    />
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-9 w-9 rounded-full hover:bg-muted ${
+                      searchOpen ? "bg-muted" : ""
+                    }`}
+                    title="Rechercher un artisan"
+                    type={searchOpen ? "submit" : "button"}
+                    onClick={() => {
+                      if (searchOpen && searchTerm.trim()) {
+                        submitSearch();
+                        return;
+                      }
+                      setSearchOpen((open) => !open);
+                    }}
+                  >
+                    <Search className="h-4 w-4" />
+                  </Button>
+                </form>
+              </div>
+            )}
             {/* Notifications */}{" "}
             <div className="relative">
               <Button
@@ -314,8 +320,8 @@ export default function Navbar() {
                         {notificationsLoading
                           ? "Chargement..."
                           : unreadCount > 0
-                            ? `${unreadCount} non lues`
-                            : "Toutes lues"}
+                          ? `${unreadCount} non lues`
+                          : "Toutes lues"}
                       </p>
                     </div>
                     <Button
