@@ -21,7 +21,7 @@ export default function Stats() {
           Array.isArray(data)
             ? data.map((row: any) => ({
                 artisanId: row._id || row.artisanId,
-                artisanName: row.artisanName || row._id || row.artisanId,
+                artisanName: row.artisanName || "",
                 totalSales: row.totalSales,
                 totalOrders: row.totalOrders,
               }))
