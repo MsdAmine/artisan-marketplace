@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { apiGet } from "../api/client";
+import { getArtisanProfile } from "@/api/artisans";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -13,23 +14,86 @@ type SalesStat = {
 export default function Stats() {
   const [stats, setStats] = useState<SalesStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [artisanNameMap, setArtisanNameMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     apiGet("/stats/sales-by-artisan")
       .then((data) =>
-        setStats(
-          Array.isArray(data)
-            ? data.map((row: any) => ({
-                artisanId: row._id || row.artisanId,
-                artisanName: row.artisanName || "",
-                totalSales: row.totalSales,
-                totalOrders: row.totalOrders,
-              }))
-            : []
-        )
+        Array.isArray(data)
+          ? data.map((row: any) => ({
+              artisanId: row._id || row.artisanId,
+              artisanName: row.artisanName || "",
+              totalSales: row.totalSales,
+              totalOrders: row.totalOrders,
+            }))
+          : []
       )
+      .then((mappedStats) => {
+        const knownNames: Record<string, string> = {};
+
+        mappedStats.forEach((row) => {
+          if (row.artisanName) {
+            knownNames[row.artisanId] = row.artisanName;
+          }
+        });
+
+        if (Object.keys(knownNames).length > 0) {
+          setArtisanNameMap((prev) => ({ ...prev, ...knownNames }));
+        }
+
+        setStats(mappedStats);
+      })
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    const missingIds = stats
+      .filter((row) => !row.artisanName && !artisanNameMap[row.artisanId])
+      .map((row) => row.artisanId);
+
+    if (missingIds.length === 0) return;
+
+    let cancelled = false;
+
+    const fetchNames = async () => {
+      const entries = await Promise.all(
+        Array.from(new Set(missingIds)).map(async (artisanId) => {
+          try {
+            const profile = await getArtisanProfile(artisanId);
+            const fullName = `${profile.firstName || ""} ${
+              profile.lastName || ""
+            }`
+              .trim()
+              .replace(/\s+/g, " ");
+
+            const nameCandidate =
+              fullName || profile.name || profile.username || profile.email || "";
+
+            return [artisanId, nameCandidate || "Nom inconnu"] as const;
+          } catch (error) {
+            console.error(`Failed to resolve artisan ${artisanId} name`, error);
+            return [artisanId, "Nom inconnu"] as const;
+          }
+        })
+      );
+
+      if (!cancelled && entries.length > 0) {
+        setArtisanNameMap((prev) => ({
+          ...prev,
+          ...Object.fromEntries(entries),
+        }));
+      }
+    };
+
+    fetchNames();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [artisanNameMap, stats]);
+
+  const resolveArtisanName = (row: SalesStat) =>
+    artisanNameMap[row.artisanId] || row.artisanName || "Nom inconnu";
 
   const totalRevenue = stats.reduce((sum, row) => sum + row.totalSales, 0);
   const totalOrders = stats.reduce((sum, row) => sum + row.totalOrders, 0);
@@ -93,7 +157,7 @@ export default function Stats() {
                   {sortedBySales[0] ? (
                     <div className="space-y-1">
                       <p className="text-lg font-semibold text-slate-900">
-                        {sortedBySales[0].artisanName}
+                        {resolveArtisanName(sortedBySales[0])}
                       </p>
                       <p className="text-sm text-slate-600">
                         {sortedBySales[0].totalSales.toLocaleString("fr-MA", {
@@ -124,9 +188,7 @@ export default function Stats() {
                       <div className="flex items-center justify-between text-sm font-medium text-slate-800">
                         <span>
                           Artisan: {row.artisanId}
-                          {row.artisanName
-                            ? ` (${row.artisanName})`
-                            : " (Nom inconnu)"}
+                          {` (${resolveArtisanName(row)})`}
                         </span>
                         <span className="text-slate-600">
                           {row.totalSales.toLocaleString("fr-MA", {
@@ -160,9 +222,7 @@ export default function Stats() {
                       <div className="flex items-center justify-between text-sm font-medium text-slate-800">
                         <span>
                           Artisan: {row.artisanId}
-                          {row.artisanName
-                            ? ` (${row.artisanName})`
-                            : " (Nom inconnu)"}
+                          {` (${resolveArtisanName(row)})`}
                         </span>
                         <Badge variant="secondary" className="bg-slate-100 text-slate-800">
                           {row.totalOrders} commandes
@@ -192,10 +252,7 @@ export default function Stats() {
                       className="bg-white border rounded-xl p-4 shadow-sm space-y-2"
                     >
                       <h2 className="font-semibold text-slate-800">
-                        Artisan: {row.artisanId}
-                        {row.artisanName
-                          ? ` (${row.artisanName})`
-                          : " (Nom inconnu)"}
+                        Artisan: {row.artisanId} ({resolveArtisanName(row)})
                       </h2>
 
                       <p className="text-sm text-slate-600">
