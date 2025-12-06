@@ -347,38 +347,6 @@ export default function Catalog() {
                   </div>
                 </div>
               </div>
-
-              {/* Quick Stats */}
-              <CardContent className="p-6">
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  Statistiques
-                </h4>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Prix moyen</span>
-                    <span className="font-semibold">
-                      {Math.round(
-                        products.reduce((acc, p) => acc + p.price, 0) /
-                          products.length
-                      ) || 0}{" "}
-                      MAD
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Artisans actifs</span>
-                    <span className="font-semibold">
-                      {new Set(products.map((p) => p.artisan)).size}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Note moyenne</span>
-                    <span className="font-semibold flex items-center gap-1">
-                      4.8{" "}
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
 
