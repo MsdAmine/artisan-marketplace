@@ -4,6 +4,7 @@ import { authHeaders } from "./authHeaders";
 export type UpdateUserPayload = {
   name?: string;
   phone?: string;
+  avatar?: string;
   deliveryAddress?: {
     street?: string;
     city?: string;
