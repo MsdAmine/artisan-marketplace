@@ -228,7 +228,8 @@ export default function ArtisanSearch() {
               {results.map((artisan) => {
                 // Use safe access with optional chaining and fallbacks
                 const artisanFollowers = artisan.followers ?? 0;
-                const artisanRating = artisan.rating ?? 4.8;
+                const artisanRating =
+                  typeof artisan.rating === "number" ? artisan.rating : null;
 
                 return (
                   <Card
@@ -251,7 +252,9 @@ export default function ArtisanSearch() {
                               variant="secondary"
                             >
                               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 mr-1" />
-                              {artisanRating.toFixed(1)}
+                              {artisanRating !== null
+                                ? artisanRating.toFixed(1)
+                                : "Nouveau"}
                             </Badge>
                           </div>
                           <div className="flex-1">

@@ -50,6 +50,62 @@ router.get("/search", async (req, res) => {
       .sort({ name: 1 })
       .toArray();
 
+    const artisanIds = results.map((artisan) => artisan._id.toString());
+
+    let ratingMap = {};
+
+    if (artisanIds.length > 0) {
+      const ratingStats = await db
+        .collection("productRatings")
+        .aggregate([
+          {
+            $lookup: {
+              from: "products",
+              let: { ratedProductId: "$productId" },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: { $eq: ["$_id", "$$ratedProductId"] },
+                  },
+                },
+              ],
+              as: "productDetails",
+            },
+          },
+          { $unwind: "$productDetails" },
+          { $match: { "productDetails.artisanId": { $in: artisanIds } } },
+          {
+            $group: {
+              _id: "$productDetails.artisanId",
+              totalRatingSum: { $sum: "$rating" },
+              totalRatings: { $sum: 1 },
+            },
+          },
+          {
+            $project: {
+              averageRating: {
+                $cond: [
+                  { $gt: ["$totalRatings", 0] },
+                  {
+                    $round: [
+                      { $divide: ["$totalRatingSum", "$totalRatings"] },
+                      1,
+                    ],
+                  },
+                  0,
+                ],
+              },
+            },
+          },
+        ])
+        .toArray();
+
+      ratingMap = ratingStats.reduce((acc, stat) => {
+        acc[stat._id] = stat.averageRating;
+        return acc;
+      }, {});
+    }
+
     const driver = req.neo4jDriver;
 
     // Enrich artisans with followers stats when Neo4j is available
@@ -66,12 +122,14 @@ router.get("/search", async (req, res) => {
               ...artisan,
               _id: artisan._id.toString(),
               followers: stats.followers,
+              rating: ratingMap[artisan._id.toString()] ?? null,
             };
           })
         )
       : results.map((artisan) => ({
           ...artisan,
           _id: artisan._id.toString(),
+          rating: ratingMap[artisan._id.toString()] ?? null,
         }));
 
     res.json({ artisans: artisansWithStats });
