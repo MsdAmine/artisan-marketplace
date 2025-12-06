@@ -32,6 +32,62 @@ router.get("/sales-by-artisan", async (req, res) => {
           totalOrders: { $size: "$totalOrders" },
         },
       },
+      {
+        $lookup: {
+          from: "users",
+          let: { artisanId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: [{ $toString: "$_id" }, "$$artisanId"],
+                },
+              },
+            },
+            {
+              $project: {
+                firstName: 1,
+                lastName: 1,
+                username: 1,
+              },
+            },
+          ],
+          as: "artisanInfo",
+        },
+      },
+      {
+        $addFields: {
+          artisanName: {
+            $let: {
+              vars: { artisan: { $arrayElemAt: ["$artisanInfo", 0] } },
+              in: {
+                $let: {
+                  vars: {
+                    fullName: {
+                      $trim: {
+                        input: {
+                          $concat: [
+                            { $ifNull: ["$$artisan.firstName", ""] },
+                            " ",
+                            { $ifNull: ["$$artisan.lastName", ""] },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                  in: {
+                    $cond: [
+                      { $gt: [{ $strLenCP: "$$fullName" }, 0] },
+                      "$$fullName",
+                      { $ifNull: ["$$artisan.username", null] },
+                    ],
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     ];
 
     const stats = await db.collection("orders").aggregate(pipeline).toArray();
