@@ -49,6 +49,8 @@ router.get("/sales-by-artisan", async (req, res) => {
                 firstName: 1,
                 lastName: 1,
                 username: 1,
+                name: 1,
+                email: 1,
               },
             },
           ],
@@ -76,10 +78,27 @@ router.get("/sales-by-artisan", async (req, res) => {
                     },
                   },
                   in: {
-                    $cond: [
-                      { $gt: [{ $strLenCP: "$$fullName" }, 0] },
-                      "$$fullName",
-                      { $ifNull: ["$$artisan.username", null] },
+                    $ifNull: [
+                      {
+                        $cond: [
+                          { $gt: [{ $strLenCP: "$$fullName" }, 0] },
+                          "$$fullName",
+                          null,
+                        ],
+                      },
+                      {
+                        $ifNull: [
+                          "$$artisan.name",
+                          {
+                            $ifNull: [
+                              "$$artisan.username",
+                              {
+                                $ifNull: ["$$artisan.email", { $toString: "$_id" }],
+                              },
+                            ],
+                          },
+                        ],
+                      },
                     ],
                   },
                 },
