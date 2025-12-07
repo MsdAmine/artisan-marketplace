@@ -19,6 +19,7 @@ import {
   fetchNotifications,
   markAllNotificationsRead,
   markNotificationRead,
+  openNotificationStream,
 } from "@/api/notifications";
 import type { Notification } from "@/types/notifications";
 import { Input } from "./input";
@@ -82,6 +83,30 @@ export default function Navbar() {
     }
 
     void loadNotifications();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const stop = openNotificationStream({
+      onMessage: (incoming) => {
+        setNotifications((prev) => {
+          const existing = prev.find((n) => n._id === incoming._id);
+          const next = existing
+            ? prev.map((n) => (n._id === incoming._id ? { ...n, ...incoming } : n))
+            : [incoming, ...prev];
+
+          return next.sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+      },
+      onError: (err) => {
+        console.error("Notification stream error", err);
+      },
+    });
+
+    return () => stop();
   }, [user]);
 
   async function loadNotifications() {

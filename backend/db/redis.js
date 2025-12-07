@@ -34,6 +34,19 @@ async function ensureConnected() {
   }
 }
 
+async function createStreamClient() {
+  const streamClient = client.duplicate();
+  streamClient.on("error", (err) => {
+    console.error("Redis stream client error", err);
+  });
+
+  if (!streamClient.isOpen) {
+    await streamClient.connect();
+  }
+
+  return streamClient;
+}
+
 module.exports = {
   async get(key) {
     await ensureConnected();
@@ -60,4 +73,11 @@ module.exports = {
     await ensureConnected();
     return client.del(key);
   },
+
+  async xadd(streamKey, message, id = "*") {
+    await ensureConnected();
+    return client.xAdd(streamKey, id, message);
+  },
+
+  createStreamClient,
 };
