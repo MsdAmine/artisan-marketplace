@@ -6,6 +6,7 @@ const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 const { getFollowers } = require("../neo4j/actions");
 const redis = require("../db/redis");
+const { publishNotificationToStream } = require("../utils/notificationStream");
 
 // ===============================================
 // PRODUCT CRUD & FETCHING
@@ -117,7 +118,18 @@ router.post("/", async (req, res) => {
           createdAt: new Date(),
         }));
 
-        await db.collection("notifications").insertMany(notifications);
+        const insertResult = await db
+          .collection("notifications")
+          .insertMany(notifications);
+
+        await Promise.all(
+          notifications.map((notification, index) =>
+            publishNotificationToStream({
+              ...notification,
+              _id: insertResult.insertedIds[index]?.toString(),
+            })
+          )
+        );
       }
     } catch (notificationErr) {
       console.error("Failed to create notifications for followers", notificationErr);
