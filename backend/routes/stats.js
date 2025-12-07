@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const auth = require("../middleware/auth");
+const redis = require("../db/redis");
 
 // ---------- ADMIN / GLOBAL STATS ----------
 // GET /api/stats/sales-by-artisan
@@ -124,6 +125,16 @@ router.get("/artisan", auth, async (req, res) => {
     const db = await connectMongo();
     const artisanId = String(req.user.id); // comes from JWT
 
+    const cacheKey = `stats:artisan:${artisanId}`;
+    try {
+      const cachedStats = await redis.get(cacheKey);
+      if (cachedStats) {
+        return res.json(JSON.parse(cachedStats));
+      }
+    } catch (cacheErr) {
+      console.warn(`Failed to read artisan stats cache for ${cacheKey}:`, cacheErr);
+    }
+
     const pipeline = [
       { $unwind: "$items" },
       {
@@ -159,6 +170,12 @@ router.get("/artisan", auth, async (req, res) => {
       productCount: 0, // you can compute this later if you want
       salesChangePercent: 0,
     };
+
+    try {
+      await redis.set(cacheKey, JSON.stringify(response), 300);
+    } catch (cacheErr) {
+      console.warn(`Failed to write artisan stats cache for ${cacheKey}:`, cacheErr);
+    }
 
     res.json(response);
   } catch (err) {
