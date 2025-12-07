@@ -372,6 +372,16 @@ export default function Navbar() {
                         ? `/artisan/${notification.artisanId}`
                         : "/";
 
+                      const title =
+                        notification.type === "new_follower"
+                          ? "Nouvel abonné"
+                          : "Nouvel article publié";
+
+                      const description =
+                        notification.type === "new_follower"
+                          ? `${notification.followerName || "Un utilisateur"} vous suit maintenant.`
+                          : notification.productName || "Découvrir la nouveauté";
+
                       return (
                         <Link
                           key={notification._id}
@@ -383,11 +393,9 @@ export default function Navbar() {
                               : "border-primary/20 bg-primary/5"
                           }`}
                         >
-                          <p className="text-sm font-semibold">
-                            Nouvel article publié
-                          </p>
+                          <p className="text-sm font-semibold">{title}</p>
                           <p className="text-xs text-muted-foreground">
-                            {notification.productName || "Découvrir la nouveauté"}
+                            {description}
                           </p>
                           <p className="text-[11px] text-muted-foreground mt-1">
                             {new Date(notification.createdAt).toLocaleString()}

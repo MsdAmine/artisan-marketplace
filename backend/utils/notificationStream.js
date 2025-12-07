@@ -9,6 +9,8 @@ function serializeNotificationPayload(notification) {
     notificationId: notification._id ? String(notification._id) : "",
     userId: notification.userId ? String(notification.userId) : "",
     artisanId: notification.artisanId ? String(notification.artisanId) : "",
+    followerId: notification.followerId ? String(notification.followerId) : "",
+    followerName: notification.followerName || "",
     productId: notification.productId ? String(notification.productId) : "",
     productName: notification.productName ? String(notification.productName) : "",
     type: notification.type || "new_product",
