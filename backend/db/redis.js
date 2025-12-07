@@ -12,10 +12,25 @@ client.on("error", (err) => {
   console.error("Redis client error", err);
 });
 
+client.on("ready", () => {
+  console.log(`Redis connection ready at ${redisUrl}`);
+});
+
+client.on("end", () => {
+  console.warn("Redis connection closed");
+});
+
+client.on("reconnecting", () => {
+  console.warn(`Reconnecting to Redis at ${redisUrl}`);
+});
+
 async function ensureConnected() {
   if (!client.isOpen) {
     await client.connect();
-    console.log(`Connected to Redis at ${redisUrl}`);
+    const pingResponse = await client.ping();
+    console.log(
+      `Connected to Redis at ${redisUrl} and responding with: ${pingResponse}`
+    );
   }
 }
 
