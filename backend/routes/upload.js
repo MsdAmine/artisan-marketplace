@@ -28,8 +28,21 @@ const upload = multer({ storage });
 // POST /api/upload
 router.post("/", upload.single("image"), (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file provided" });
+    }
+
+    // Some versions of multer-storage-cloudinary expose the URL as `path`, while
+    // others expose it as `secure_url`/`url`. Ensure we always return a usable
+    // value so the frontend can persist the product image.
+    const imageUrl = req.file.path || req.file.secure_url || req.file.url;
+
+    if (!imageUrl) {
+      return res.status(500).json({ error: "Upload succeeded but no URL returned" });
+    }
+
     res.json({
-      url: req.file.path, // Cloudinary URL
+      url: imageUrl, // Cloudinary URL
       public_id: req.file.filename, // Cloudinary public ID
     });
   } catch (err) {
