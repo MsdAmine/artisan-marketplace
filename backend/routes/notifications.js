@@ -45,8 +45,8 @@ router.get("/stream", async (req, res) => {
       while (active) {
         try {
           const response = await streamClient.xRead(
-            { BLOCK: 20000, COUNT: 10 },
-            { key: streamKey, id: lastId }
+            [{ key: streamKey, id: lastId }],
+            { BLOCK: 20000, COUNT: 10 }
           );
 
           if (response?.length) {
