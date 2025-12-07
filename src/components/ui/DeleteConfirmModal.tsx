@@ -12,7 +12,7 @@ export default function DeleteConfirmModal({ open, onClose, product, onDeleted }
   if (!product) return null;
 
   async function deleteProduct() {
-    const res = await fetch(`${API_BASE}/artisans/${product._id}`, {
+    const res = await fetch(`${API_BASE}/products/${product._id}`, {
       method: "DELETE",
       headers: authHeaders({ includeJson: false }),
     });
