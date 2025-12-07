@@ -37,7 +37,15 @@ async function ensureConnected() {
 module.exports = {
   async get(key) {
     await ensureConnected();
-    return client.get(key);
+    const value = await client.get(key);
+
+    if (value !== null) {
+      console.log(`CACHE HIT for key "${key}"`);
+    } else {
+      console.log(`CACHE MISS for key "${key}"`);
+    }
+
+    return value;
   },
 
   async set(key, value, ttlSeconds) {
