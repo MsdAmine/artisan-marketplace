@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
+const { publishNotificationToStream } = require("../utils/notificationStream");
 
 const {
   followArtisan,
@@ -296,6 +297,43 @@ router.post("/:artisanId/follow", async (req, res) => {
       return res.status(400).json({ error: "You cannot follow yourself" });
     }
     await followArtisan(driver, userId, artisanId);
+
+    // Notify the artisan that they have a new follower
+    try {
+      const db = await connectMongo();
+      let followerName = "Un nouvel abonné";
+
+      if (ObjectId.isValid(userId)) {
+        const follower = await db
+          .collection("users")
+          .findOne({ _id: new ObjectId(userId) }, { projection: { name: 1 } });
+
+        if (follower?.name) {
+          followerName = follower.name;
+        }
+      }
+
+      const notification = {
+        userId: artisanId,
+        artisanId,
+        followerId: userId,
+        followerName,
+        type: "new_follower",
+        read: false,
+        createdAt: new Date(),
+      };
+
+      const insertResult = await db
+        .collection("notifications")
+        .insertOne(notification);
+
+      await publishNotificationToStream({
+        ...notification,
+        _id: insertResult.insertedId.toString(),
+      });
+    } catch (notificationErr) {
+      console.error("Failed to create follow notification", notificationErr);
+    }
 
     res.json({ success: true, action: "followed" });
   } catch (err) {
