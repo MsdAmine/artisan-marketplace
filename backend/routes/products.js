@@ -5,6 +5,7 @@ const router = express.Router();
 const { connectMongo } = require("../db/mongo");
 const { ObjectId } = require("mongodb");
 const { getFollowers } = require("../neo4j/actions");
+const redis = require("../db/redis");
 
 // ===============================================
 // PRODUCT CRUD & FETCHING
@@ -16,8 +17,17 @@ const { getFollowers } = require("../neo4j/actions");
 // ---------------------------------------
 router.get("/", async (req, res) => {
   try {
+    const cacheKey = "products:all";
+    const cachedProducts = await redis.get(cacheKey);
+
+    if (cachedProducts) {
+      return res.json(JSON.parse(cachedProducts));
+    }
+
     const db = await connectMongo();
     const products = await db.collection("products").find().toArray();
+
+    await redis.set(cacheKey, JSON.stringify(products), 300);
     res.json(products);
   } catch (err) {
     console.error("GET PRODUCTS ERROR", err);
@@ -113,6 +123,7 @@ router.post("/", async (req, res) => {
       console.error("Failed to create notifications for followers", notificationErr);
     }
 
+    await redis.del("products:all");
     res.json({ insertedId: result.insertedId, product });
   } catch (err) {
     console.error("CREATE PRODUCT ERROR", err);
@@ -145,6 +156,7 @@ router.put("/:id", async (req, res) => {
       .collection("products")
       .updateOne({ _id: new ObjectId(req.params.id) }, { $set: updateData });
 
+    await redis.del("products:all");
     res.json({ updated: updated.modifiedCount });
   } catch (err) {
     console.error("UPDATE PRODUCT ERROR", err);
@@ -163,6 +175,7 @@ router.delete("/:id", async (req, res) => {
       _id: new ObjectId(req.params.id),
     });
 
+    await redis.del("products:all");
     res.json({ deleted: result.deletedCount });
   } catch (err) {
     console.error("DELETE PRODUCT ERROR", err);
