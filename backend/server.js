@@ -2,8 +2,21 @@
 
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config({ path: ".env" });
+const fs = require("fs");
+const path = require("path");
 const neo4j = require("neo4j-driver");
+
+const envPath = [
+  path.join(__dirname, ".env"),
+  path.join(__dirname, "..", ".env"),
+].find((candidate) => fs.existsSync(candidate));
+
+if (envPath) {
+  require("dotenv").config({ path: envPath });
+  console.log(`Loaded environment variables from ${envPath}`);
+} else {
+  require("dotenv").config();
+}
 
 const { connectMongo } = require("./db/mongo");
 
