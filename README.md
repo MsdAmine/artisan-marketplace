@@ -133,4 +133,5 @@
 - Open an issue or PR with clear descriptions; seed data can be reset via `backend/seed.js` to simplify review.
 
 ## License
-- The repository currently has no explicit license. Add one before public distribution.
+- This project is licensed under the MIT License.  
+See the [LICENSE](./LICENSE) file for details.
